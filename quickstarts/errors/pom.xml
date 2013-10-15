@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <!--
   JBoss, Home of Professional Open Source
   Copyright 2013, Red Hat, Inc. and/or its affiliates, and individual
@@ -14,17 +15,18 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.jboss.quickstarts.fuse</groupId>
-    <artifactId>jms</artifactId>
+    <artifactId>errors</artifactId>
     <version>6.1.0.redhat-SNAPSHOT</version>
-    <packaging>jar</packaging>
-    <name>JBoss Fuse :: Examples :: JMS</name>
-    <description>JMS Example</description>
+    <packaging>bundle</packaging>
+    <name>JBoss Fuse :: Examples :: Error Handling</name>
+    <description>Handle errors in the Camel m</description>
 
     <properties>
         <!-- Explicitly declaring the source encoding eliminates the following
@@ -34,6 +36,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <version.compiler.plugin>2.3.1</version.compiler.plugin>
+        <version.maven-bundle-plugin>2.3.4</version.maven-bundle-plugin>
 
         <!-- maven-compiler-plugin -->
         <maven.compiler.target>1.6</maven.compiler.target>
@@ -62,10 +65,9 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
     <dependencies>
         <!--
-          For this quickstart, we will be using the OSGi Blueprint XML syntax for Apache Camel.
+          For this example, we will be using the OSGi Blueprint XML syntax for Apache Camel.
           The camel-blueprint bundle is installed in JBoss Fuse by default,
           so we are setting the dependency's scope to 'provided'.
         -->
@@ -73,13 +75,28 @@
             <groupId>org.apache.camel</groupId>
             <artifactId>camel-blueprint</artifactId>
         </dependency>
-
-        <!-- ActiveMQ connectivity for Camel -->
+        <!--
+          For logging, we will use SLF4J, which is also available in the container by default.
+        -->
         <dependency>
-            <groupId>org.apache.activemq</groupId>
-            <artifactId>activemq-osgi</artifactId>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
         </dependency>
-
+        <!--
+          Dependencies with scope 'test' will be ignored when installing this Fuse Application Bundle (FAB) in the container
+          but they will be available in our test classes.q
+        -->
+        <dependency>
+            <groupId>junit</groupId>
+            <artifactId>junit</artifactId>
+        </dependency>
+        <!--
+          Add the slf4j-log4j12 dependency jar for testing
+        -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
+        </dependency>
     </dependencies>
 
     <repositories>
@@ -144,7 +161,12 @@
                     <target>${maven.compiler.target}</target>
                 </configuration>
             </plugin>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <version>${version.maven-bundle-plugin}</version>
+                <extensions>true</extensions>
+            </plugin>
         </plugins>
     </build>
-
 </project>
