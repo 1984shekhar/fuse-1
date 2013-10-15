@@ -228,6 +228,11 @@ public class ProfileFacade implements Profile, HasId {
     }
 
     @Override
+    public boolean exists() {
+        throw new UnsupportedOperationException("The method is not yet implemented.");
+    }
+
+    @Override
     public String getId() {
         return id;
     }
