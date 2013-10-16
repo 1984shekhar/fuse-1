@@ -197,12 +197,6 @@ public class ProfileFacade implements Profile, HasId {
     }
 
     @Override
-    public boolean exists() {
-        Boolean b = Helpers.exec(j4p, "exists()");
-        return b != null && b.booleanValue();
-    }
-
-    @Override
     public boolean isAbstract() {
         return getFieldValue("abstract");
     }
