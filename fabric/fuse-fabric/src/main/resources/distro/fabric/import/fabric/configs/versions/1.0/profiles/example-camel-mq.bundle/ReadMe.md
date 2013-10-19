@@ -1,6 +1,6 @@
-# Example Camel MQ
+# Example Camel MQ Bundle Demo
 
-This example shows you how to integrate Camel routes with the A-MQ message broker using Fuse Fabric to discover the broker.
+This example shows you how to integrate Camel routes with the A-MQ message broker.
 
 There are two routes in this example:
 
@@ -20,7 +20,7 @@ You can deploy and run this example at the console command line, as follows:
 1. Wait for the new child container, `broker`, to start up. Use the `fabric:container-list` command to check the status of the `broker` container and wait until the `[provision status]` is shown as `success`.
 1. Now deploy the `example-camel-mq` profile. Create a new child container and deploy the `example-camel-mq` profile in a single step, by entering the following command at the console:
 
-        fabric:container-create-child --profile example-camel-mq root camelmq
+        fabric:container-create-child --profile example-camel-mq.bundle root camelmq
 
 1. Log into the `camelmq` container using the `fabric:container-connect` command, as follows:
 
