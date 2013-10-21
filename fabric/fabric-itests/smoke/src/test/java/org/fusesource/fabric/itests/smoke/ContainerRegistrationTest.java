@@ -6,6 +6,7 @@ import org.fusesource.fabric.itests.paxexam.support.Provision;
 import org.fusesource.fabric.itests.paxexam.support.FabricTestSupport;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
@@ -23,6 +24,7 @@ import java.util.Set;
  */
 @RunWith(JUnit4TestRunner.class)
 @ExamReactorStrategy(AllConfinedStagedReactorFactory.class)
+@Ignore("[FABRIC-521] Fix fabric/fabric-itests/fabric-itests-smoke")
 public class ContainerRegistrationTest extends FabricTestSupport {
 
     @After
