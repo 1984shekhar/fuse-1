@@ -21,9 +21,7 @@ import org.fusesource.fabric.api.FabricException;
 import org.fusesource.fabric.api.FabricRequirements;
 import org.fusesource.fabric.api.Profile;
 import org.fusesource.fabric.api.FabricService;
-import org.fusesource.fabric.service.VersionPropertyPointerResolver;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.fusesource.fabric.api.Version;
 
 import java.io.IOException;
 import java.util.*;
@@ -135,29 +133,18 @@ public class ProfileImpl implements Profile {
 
     public static List<String> getContainerConfigList(Profile p, ConfigListType type) {
         try {
-            Properties containerProps = getContainerProperties(p);
+            Map<String, String> containerProps = p.getContainerConfiguration();
             ArrayList<String> rc = new ArrayList<String>();
             String prefix = type + ".";
-            for ( Map.Entry<Object, Object> e : containerProps.entrySet() ) {
-                if ( ((String)e.getKey()).startsWith(prefix) ) {
-                    String value = replaceVersionResolver(p, (String) e.getValue());
-                    rc.add(value);
+            for ( Map.Entry<String, String> e : containerProps.entrySet() ) {
+                if ( (e.getKey()).startsWith(prefix) ) {
+                    rc.add(e.getValue());
                 }
             }
             return rc;
 
         } catch (Exception e) {
             throw FabricException.launderThrowable(e);
-        }
-    }
-
-    private static String replaceVersionResolver(Profile p, String value) {
-        // TODO we maybe need to consider other kinds of resolver here?
-        if (value.indexOf(VersionPropertyPointerResolver.VERSION_PREFIX) > 0) {
-            // lets only make an overlay profile if we have a version to replace
-            return VersionPropertyPointerResolver.replaceVersions(p.getOverlay(), value);
-        } else {
-            return value;
         }
     }
 
@@ -182,15 +169,6 @@ public class ProfileImpl implements Profile {
         p.setConfigurations(config);
     }
 
-    public static Properties getContainerProperties(Profile p) throws IOException {
-        byte[] b = p.getFileConfigurations().get(AGENT_PID + ".properties");
-        if (b != null) {
-            return DataStoreHelpers.toProperties(b);
-        } else {
-            return new Properties();
-        }
-    }
-
     public Profile[] getParents() {
         try {
             String str = getAttributes().get(PARENTS);
@@ -199,8 +177,9 @@ public class ProfileImpl implements Profile {
             }
             str = str.trim();
             List<Profile> profiles = new ArrayList<Profile>();
+            Version v = service.getVersion(version);
             for (String p : str.split(" ")) {
-                profiles.add(new ProfileImpl(p, version, service));
+                profiles.add(v.getProfile(p));
             }
             return profiles.toArray(new Profile[profiles.size()]);
         } catch (Exception e) {
@@ -306,6 +285,7 @@ public class ProfileImpl implements Profile {
     }
 
     public void delete(boolean force) {
+        // TODO: what about child profiles ?
         Container[] containers = getAssociatedContainers();
         if (containers.length == 0) {
             service.getDataStore().deleteProfile(version, id);
