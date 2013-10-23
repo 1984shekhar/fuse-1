@@ -24,12 +24,13 @@ import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Modified;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
+import org.codehaus.jackson.map.DeserializationConfig;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.fusesource.common.util.ClassLoaders;
 import org.fusesource.fabric.api.scr.AbstractComponent;
-import org.fusesource.fabric.zookeeper.ZkPath;
-import org.fusesource.gateway.ServiceMap;
-import org.fusesource.gateway.handlers.http.HttpGateway;
-import org.fusesource.gateway.handlers.tcp.TcpGateway;
+import org.fusesource.gateway.fabric.config.GatewayConfig;
+import org.fusesource.gateway.fabric.config.GatewaysConfig;
+import org.fusesource.gateway.fabric.config.ListenConfig;
 import org.osgi.framework.Bundle;
 import org.osgi.service.component.ComponentContext;
 import org.slf4j.Logger;
@@ -37,11 +38,10 @@ import org.slf4j.LoggerFactory;
 import org.vertx.java.core.Vertx;
 import org.vertx.java.core.VertxFactory;
 
-import java.lang.reflect.Method;
+import java.io.IOException;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
 import java.util.concurrent.Callable;
 
 /**
@@ -52,15 +52,22 @@ import java.util.concurrent.Callable;
 public class FabricGateway extends AbstractComponent {
     private static final transient Logger LOG = LoggerFactory.getLogger(FabricGateway.class);
 
+    private String configurationUrl = "profile:org.fusesource.fabric.gateway.json";
+
     @Reference
     private CuratorFramework curator;
 
-    private List<GatewayGroup> groups = new ArrayList<GatewayGroup>();
+    private List<GatewayListener> listeners = new ArrayList<GatewayListener>();
     private Vertx vertx;
+    private final ObjectMapper mapper = new ObjectMapper();
+
+    public FabricGateway() {
+        mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     @Activate
-    public void activate(ComponentContext context, final Map<String, String> properties) throws Exception {
-        System.out.println("Activating the gateway " + this);
+    public void activate(ComponentContext context) throws Exception {
+        LOG.info("Activating the gateway " + this);
 
         // TODO support injecting of the ClassLoader without depending on OSGi APIs
         // see https://github.com/jboss-fuse/fuse/issues/104
@@ -75,47 +82,61 @@ public class FabricGateway extends AbstractComponent {
                     vertx = VertxFactory.newVertx();
                 }
 
-                // TODO detect changes in the config and add/remove groups based on that?
-                GatewayGroup webGroup = createWebGroup(9000);
-                addGroup(webGroup);
-
-                // hard code for now until we figure out the configuration
-                GatewayGroup messagingGroup = createMessagingGroup("tcp", 61000);
-                addGroup(messagingGroup);
-
-                updated(properties);
+                GatewaysConfig config = loadConfig();
+                if (config != null) {
+                    createListeners(config);
+                }
                 return null;
             }
         });
     }
 
     @Modified
-    public void updated(Map<String, String> properties) throws Exception {
+    public void updated() throws Exception {
         // lets reload the configuration and find all the groups to create if they are not already created
-
-    }
-
-    protected GatewayGroup createMessagingGroup(String protocol, int port) {
-        ServiceMap serviceMap = new ServiceMap();
-        TcpGateway gateway = new TcpGateway(vertx, serviceMap, port, protocol);
-        return new GatewayGroup(curator, ZkPath.MQ_CLUSTERS.getPath(), serviceMap, gateway);
-    }
-
-    protected GatewayGroup createWebGroup(int port) {
-        ServiceMap serviceMap = new ServiceMap();
-        HttpGateway gateway = new HttpGateway(vertx, serviceMap, port);
-        return new GatewayGroup(curator, ZkPath.WEBAPPS_CLUSTERS.getPath(), serviceMap, gateway);
-    }
-
-    protected void addGroup(GatewayGroup group) throws Exception {
-        group.init();
-        groups.add(group);
     }
 
     @Deactivate
-    void deactivate() {
-        for (GatewayGroup group : groups) {
-            group.destroy();
+    public void deactivate() {
+        for (GatewayListener listener : listeners) {
+            listener.destroy();
+        }
+    }
+
+    public Vertx getVertx() {
+        return vertx;
+    }
+
+    public CuratorFramework getCurator() {
+        return curator;
+    }
+
+    protected void createListeners(GatewaysConfig config) {
+        List<GatewayConfig> listeners = config.getGateways();
+        for (GatewayConfig gatewayConfig : listeners) {
+            createListener(gatewayConfig);
+        }
+    }
+
+    protected void createListener(GatewayConfig config) {
+        try {
+            GatewayListener listener = config.createListener(this);
+            if (listener != null) {
+                listener.init();
+                LOG.info("Started " + listener + " from " + config);
+                listeners.add(listener);
+            }
+        } catch (Exception e) {
+            LOG.info("Failed to create listener " + config + ". Reason: " + e);
+        }
+    }
+
+    protected GatewaysConfig loadConfig() throws IOException {
+        try {
+            return mapper.readValue(new URL(configurationUrl), GatewaysConfig.class);
+        } catch (IOException e) {
+            LOG.error("Failed to load configuration " + configurationUrl + ". Reason: " + e, e);
+            return null;
         }
     }
 }

@@ -16,6 +16,7 @@
  */
 package org.fusesource.gateway.handlers.tcp;
 
+import org.fusesource.common.util.Objects;
 import org.fusesource.common.util.Strings;
 import org.fusesource.gateway.ServiceDetails;
 import org.fusesource.gateway.ServiceMap;
@@ -33,6 +34,8 @@ import org.vertx.java.core.net.NetSocket;
 import org.vertx.java.core.streams.Pump;
 
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.List;
 
@@ -43,12 +46,14 @@ public class TcpGatewayHandler implements Handler<NetSocket> {
 
     private final Vertx vertx;
     private final ServiceMap serviceMap;
+    private final String protocol;
     private Chooser<String> pathChooser = new RandomChooser<String>();
     private NetChooser serviceChooser = new DefaultNetChooser();
 
-    public TcpGatewayHandler(Vertx vertx, ServiceMap serviceMap) {
-        this.vertx = vertx;
-        this.serviceMap = serviceMap;
+    public TcpGatewayHandler(TcpGateway gateway) {
+        this.vertx = gateway.getVertx();
+        this.serviceMap = gateway.getServiceMap();
+        this.protocol = gateway.getProtocol();
     }
 
     @Override
@@ -64,22 +69,29 @@ public class TcpGatewayHandler implements Handler<NetSocket> {
                 ServiceDetails serviceDetails = serviceChooser.chooseService(socket, services);
                 if (serviceDetails != null) {
                     List<String> urlStrings = serviceDetails.getServices();
-                    if (urlStrings.size() > 0) {
-                        String urlText = urlStrings.get(0);
-                        if (Strings.notEmpty(urlText)) {
+                    for (String urlString : urlStrings) {
+                        if (Strings.notEmpty(urlString)) {
                             // lets create a client for this request...
                             try {
-                                URL url = new URL(urlText);
-                                Handler<AsyncResult<NetSocket>> handler = new Handler<AsyncResult<NetSocket>>() {
-                                    public void handle(final AsyncResult<NetSocket> asyncSocket) {
-                                        NetSocket clientSocket = asyncSocket.result();
-                                        Pump.createPump(clientSocket, socket).start();
-                                        Pump.createPump(socket, clientSocket).start();
-                                    }
-                                };
-                                client = createClient(url, handler);
+                                URI uri = new URI(urlString);
+                                //URL url = new URL(urlString);
+                                String urlProtocol = uri.getScheme();
+                                if (Objects.equal(protocol, urlProtocol)) {
+                                    Handler<AsyncResult<NetSocket>> handler = new Handler<AsyncResult<NetSocket>>() {
+                                        public void handle(final AsyncResult<NetSocket> asyncSocket) {
+                                            NetSocket clientSocket = asyncSocket.result();
+                                            Pump.createPump(clientSocket, socket).start();
+                                            Pump.createPump(socket, clientSocket).start();
+                                        }
+                                    };
+                                    client = createClient(uri, handler);
+                                    System.out.println("Created client " + client);
+                                    break;
+                                }
                             } catch (MalformedURLException e) {
-                                LOG.warn("Failed to parse URL: " + urlText + ". " + e, e);
+                                LOG.warn("Failed to parse URL: " + urlString + ". " + e, e);
+                            } catch (URISyntaxException e) {
+                                LOG.warn("Failed to parse URI: " + urlString + ". " + e, e);
                             }
                         }
                     }
@@ -88,6 +100,7 @@ public class TcpGatewayHandler implements Handler<NetSocket> {
         }
         if (client == null) {
             // fail to route
+            LOG.info("No service available for protocol " + protocol + " for paths " + paths);
             socket.close();
         }
     }
@@ -95,10 +108,8 @@ public class TcpGatewayHandler implements Handler<NetSocket> {
     /**
      * Creates a new client for the given URL and handler
      */
-    protected NetClient createClient(URL url, Handler<AsyncResult<NetSocket>> handler) throws MalformedURLException {
+    protected NetClient createClient(URI url, Handler<AsyncResult<NetSocket>> handler) throws MalformedURLException {
         NetClient client = vertx.createNetClient();
         return client.connect(url.getPort(), url.getHost(), handler);
-
     }
-
 }

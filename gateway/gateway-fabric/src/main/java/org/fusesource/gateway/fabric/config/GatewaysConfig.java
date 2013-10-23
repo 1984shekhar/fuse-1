@@ -14,36 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.fusesource.gateway.fabric.config;
 
-package org.fusesource.fabric.itests;
-
-import org.junit.After;
-import org.junit.Before;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
- *
+ * The Gateway configuration
  */
-public class BaseFabricIntegrationTestSupport {
+public class GatewaysConfig {
+    private List<GatewayConfig> gateways = new ArrayList<GatewayConfig>();
 
-    protected Logger LOG = LoggerFactory.getLogger(this.getClass().getName());
-
-    private EmbeddedFabricService server = null;
-
-    public EmbeddedFabricService getServer() {
-        return server;
+    @Override
+    public String toString() {
+        return "GatewaysConfig{" +
+                "gateways=" + gateways +
+                '}';
     }
 
-    @Before
-    public void initialize() throws Exception {
-        server = new EmbeddedFabricService();
-        server.start();
+    public List<GatewayConfig> getGateways() {
+        return gateways;
     }
 
-    @After
-    public void cleanup() throws Exception {
-        server.stop();
+    public void setGateways(List<GatewayConfig> gateways) {
+        this.gateways = gateways;
     }
-
 }

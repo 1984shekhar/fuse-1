@@ -43,17 +43,17 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * Watches a ZooKeeper path for all services inside the path which may take part in the load balancer
  */
-public class GatewayGroup {
-    private static final transient Logger LOG = LoggerFactory.getLogger(GatewayGroup.class);
+public class GatewayListener {
+    private static final transient Logger LOG = LoggerFactory.getLogger(GatewayListener.class);
 
     private final CuratorFramework curator;
     private final String zkPath;
+    private final ServiceMap serviceMap;
+    private final List<Gateway> gateways;
 
     private final ExecutorService treeCacheExecutor = Executors.newSingleThreadExecutor();
     private final AtomicBoolean active = new AtomicBoolean(false);
     private final ObjectMapper mapper = new ObjectMapper();
-    private final ServiceMap serviceMap;
-    private final Gateway gateway;
 
     private final PathChildrenCacheListener treeListener = new PathChildrenCacheListener() {
         @Override
@@ -66,17 +66,17 @@ public class GatewayGroup {
     private volatile TreeCache treeCache;
 
 
-    public GatewayGroup(CuratorFramework curator, String zkPath, ServiceMap serviceMap, Gateway gateway) {
+    public GatewayListener(CuratorFramework curator, String zkPath, ServiceMap serviceMap, List<Gateway> gateways) {
         this.curator = curator;
         this.zkPath = zkPath;
         this.serviceMap = serviceMap;
-        this.gateway = gateway;
+        this.gateways = gateways;
         mapper.configure(DeserializationConfig.Feature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
     @Override
     public String toString() {
-        return "GatewayGroup(zkPath: " + zkPath + " gateway: " + gateway + ")";
+        return "GatewayListener(zkPath: " + zkPath + " gateways: " + gateways + ")";
     }
 
     protected TreeCache getTreeCache() {
@@ -91,18 +91,23 @@ public class GatewayGroup {
             treeCache = new TreeCache(curator, zkPath, true, false, true, treeCacheExecutor);
             treeCache.start(TreeCache.StartMode.NORMAL);
             treeCache.getListenable().addListener(treeListener);
-            System.out.println("Started a group listener for " + zkPath);
-            gateway.init();
+            LOG.info("Started a group listener for " + zkPath);
+            for (Gateway gateway : gateways) {
+                gateway.init();
+            }
         }
     }
 
     public void destroy() {
         if (active.compareAndSet(true, false)) {
-            gateway.destroy();
             treeCache.getListenable().removeListener(treeListener);
             Closeables.closeQuitely(treeCache);
             treeCache = null;
             treeCacheExecutor.shutdownNow();
+
+            for (Gateway gateway : gateways) {
+                gateway.destroy();
+            }
         }
     }
 
@@ -136,8 +141,6 @@ public class GatewayGroup {
         try {
             dto = mapper.readValue(data, ServiceDTO.class);
             expandPropertyResolvers(dto);
-            System.out.println("Got event type " + type + " path: " + path + " data: " + dto);
-
             if (remove) {
                 serviceMap.serviceRemoved(path, dto);
             } else {

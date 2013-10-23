@@ -1,0 +1,30 @@
+{
+  "gateways": [
+    {
+      "zooKeeperPath": "/fabric/registry/clusters/webapps",
+      "listeners": [
+        {
+          "protocol": "http",
+          "port": 9000
+        }
+      ]
+    },
+    {
+      "zooKeeperPath": "/fabric/registry/clusters/fusemq",
+      "listeners": [
+        {
+          "protocol": "tcp",
+          "port": 61000
+        },
+        {
+          "protocol": "amqp",
+          "port": 61001
+        },
+        {
+          "protocol": "stomp",
+          "port": 61002
+        }
+      ]
+    }
+  ]
+}

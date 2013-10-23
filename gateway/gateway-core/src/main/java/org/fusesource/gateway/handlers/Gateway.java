@@ -16,10 +16,12 @@
  */
 package org.fusesource.gateway.handlers;
 
+import org.fusesource.gateway.ServiceMap;
+import org.vertx.java.core.Vertx;
+
 /**
  */
 public interface Gateway {
-
 
     void init();
 
@@ -30,4 +32,10 @@ public interface Gateway {
     String getHost();
 
     void setHost(String host);
+
+    Vertx getVertx();
+
+    ServiceMap getServiceMap();
+
+    String getProtocol();
 }

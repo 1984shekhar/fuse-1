@@ -33,6 +33,7 @@ public class TcpGateway implements Gateway {
     private final Vertx vertx;
     private final ServiceMap serviceMap;
     private final int port;
+    private final String protocol;
     private String host;
     private NetServer server;
     private Handler<NetSocket> handler;
@@ -41,12 +42,22 @@ public class TcpGateway implements Gateway {
         this.vertx = vertx;
         this.serviceMap = serviceMap;
         this.port = port;
+        this.protocol = protocol;
+    }
+
+    @Override
+    public String toString() {
+        return "TcpGateway{" +
+                "protocol='" + protocol + '\'' +
+                ", port=" + port +
+                ", host='" + host + '\'' +
+                '}';
     }
 
     @Override
     public void init() {
         if (handler == null) {
-            handler = new TcpGatewayHandler(vertx, serviceMap);
+            handler = new TcpGatewayHandler(this);
         }
         server = vertx.createNetServer().connectHandler(handler);
         if (host != null) {
@@ -77,5 +88,20 @@ public class TcpGateway implements Gateway {
     @Override
     public void setHost(String host) {
         this.host = host;
+    }
+
+    @Override
+    public Vertx getVertx() {
+        return vertx;
+    }
+
+    @Override
+    public ServiceMap getServiceMap() {
+        return serviceMap;
+    }
+
+    @Override
+    public String getProtocol() {
+        return protocol;
     }
 }
