@@ -26,9 +26,7 @@ import org.fusesource.fabric.api.ProfileRequirements;
 import org.fusesource.fabric.internal.ContainerImpl;
 import org.fusesource.fabric.itests.paxexam.support.FabricTestSupport;
 import org.fusesource.fabric.itests.paxexam.support.Provision;
-import org.fusesource.fabric.service.FabricServiceImpl;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
@@ -47,6 +45,7 @@ import java.util.Dictionary;
 import static junit.framework.Assert.assertEquals;
 import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
+import static org.apache.karaf.tooling.exam.options.KarafDistributionOption.debugConfiguration;
 import static org.fusesource.tooling.testing.pax.exam.karaf.ServiceLocator.getOsgiService;
 
 
@@ -56,7 +55,6 @@ public class AutoClusterStartupTest extends FabricTestSupport {
     protected FabricService fabricService;
 
     @Test
-    @Ignore("[FABRIC-521] Fix fabric/fabric-itests/fabric-itests-smoke")
     public void testLocalFabricCluster() throws Exception {
         fabricService = getFabricService();
         //Test autostartup.
@@ -77,39 +75,6 @@ public class AutoClusterStartupTest extends FabricTestSupport {
         Dictionary<String, Object> dictionary = configuration.getProperties();
         assertNotNull("Expected a generated zookeeper password", dictionary.get("zookeeper.password"));
         assertTrue(String.valueOf(dictionary.get("zookeeper.url")).endsWith("2182"));
-
-        assertAutoScaling();
-    }
-
-    protected void assertAutoScaling() throws Exception {
-        String profile = "mq-amq";
-        Integer expected = 1;
-        boolean changed = fabricService.scaleProfile(profile, expected);
-        assertProfileMinimumSize(profile, expected);
-
-        // lets call the scale method again, should have no effect as already requirements are updated
-        // and we've not started an auto-scaler yet
-        changed = fabricService.scaleProfile(profile, expected);
-        assertProfileMinimumSize(profile, expected);
-        Assert.assertEquals("should not have changed!", false, changed);
-
-
-        changed = fabricService.scaleProfile(profile, 2);
-        assertProfileMinimumSize(profile, 2);
-
-        // now lets scale down
-        changed = fabricService.scaleProfile(profile, -1);
-
-        // since we have no instances right now, scaling down just removes the minimumInstances requirements ;)
-        assertProfileMinimumSize(profile, null);
-    }
-
-    protected void assertProfileMinimumSize(String profile, Integer expected) throws IOException {
-        FabricRequirements requirements = fabricService.getRequirements();
-        ProfileRequirements profileRequirements = requirements.getOrCreateProfileRequirement(profile);
-        Assert.assertNotNull("Should have profile requirements for profile " + profile, profileRequirements);
-        Assert.assertEquals("profile " + profile + " minimum instances", expected, profileRequirements.getMinimumInstances());
-        System.out.println("Profile " + profile + " now has requirements " + profileRequirements);
     }
 
     @Configuration

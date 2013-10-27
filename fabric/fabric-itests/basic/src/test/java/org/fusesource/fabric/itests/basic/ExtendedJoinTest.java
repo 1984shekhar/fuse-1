@@ -41,7 +41,6 @@ import static org.apache.karaf.tooling.exam.options.KarafDistributionOption.edit
 
 @RunWith(JUnit4TestRunner.class)
 @ExamReactorStrategy(AllConfinedStagedReactorFactory.class)
-@Ignore("[FABRIC-646] Fix fabric smoke JoinTest")
 public class ExtendedJoinTest extends FabricTestSupport {
 
     private static final String WAIT_FOR_JOIN_SERVICE = "wait-for-service org.fusesource.fabric.boot.commands.service.Join";
@@ -60,8 +59,8 @@ public class ExtendedJoinTest extends FabricTestSupport {
         AdminService adminService = ServiceLocator.getOsgiService(AdminService.class);
 
 		String version = System.getProperty("fabric.version");
-        System.err.println(executeCommand("admin:create --featureURL mvn:org.fusesource.fabric/fuse-fabric/" + version + "/xml/features --feature fabric-boot-commands child1"));
-        System.err.println(executeCommand("admin:create --featureURL mvn:org.fusesource.fabric/fuse-fabric/" + version + "/xml/features --feature fabric-boot-commands child2"));
+        System.err.println(executeCommand("admin:create --featureURL mvn:org.fusesource.fabric/fuse-fabric/" + version + "/xml/features --feature fabric-git --feature fabric-agent --feature fabric-boot-commands child1"));
+        System.err.println(executeCommand("admin:create --featureURL mvn:org.fusesource.fabric/fuse-fabric/" + version + "/xml/features --feature fabric-git --feature fabric-agent --feature fabric-boot-commands child2"));
 		try {
 			System.err.println(executeCommand("admin:start child1"));
 			System.err.println(executeCommand("admin:start child2"));
@@ -69,20 +68,19 @@ public class ExtendedJoinTest extends FabricTestSupport {
             System.err.println(executeCommand("admin:list"));
             String joinCommand = "fabric:join -f --zookeeper-password "+ fabricService.getZookeeperPassword() +" " + fabricService.getZookeeperUrl();
 
-            System.err.println(executeCommand("ssh -l karaf -P karaf -p " + adminService.getInstance("child1").getSshPort() + " localhost " + WAIT_FOR_JOIN_SERVICE));
-            System.err.println(executeCommand("ssh -l karaf -P karaf -p " + adminService.getInstance("child1").getSshPort() + " localhost " + joinCommand));
-            System.err.println(executeCommand("ssh -l karaf -P karaf -p " + adminService.getInstance("child2").getSshPort() + " localhost " + WAIT_FOR_JOIN_SERVICE));
-            System.err.println(executeCommand("ssh -l karaf -P karaf -p " + adminService.getInstance("child2").getSshPort() + " localhost " + joinCommand));
+            System.err.println(executeCommand("ssh -l admin -P admin -p " + adminService.getInstance("child1").getSshPort() + " localhost " + WAIT_FOR_JOIN_SERVICE));
+            System.err.println(executeCommand("ssh -l admin -P admin -p " + adminService.getInstance("child1").getSshPort() + " localhost " + joinCommand));
+            System.err.println(executeCommand("ssh -l admin -P admin -p " + adminService.getInstance("child2").getSshPort() + " localhost " + WAIT_FOR_JOIN_SERVICE));
+            System.err.println(executeCommand("ssh -l admin -P admin -p " + adminService.getInstance("child2").getSshPort() + " localhost " + joinCommand));
             Provision.containersExist(Arrays.asList("child1", "child2"), PROVISION_TIMEOUT);
 			Container child1 = fabricService.getContainer("child1");
 			Container child2 = fabricService.getContainer("child2");
-			waitForProvisionSuccess(child1, PROVISION_TIMEOUT, TimeUnit.MILLISECONDS);
-			waitForProvisionSuccess(child2, PROVISION_TIMEOUT, TimeUnit.MILLISECONDS);
-			System.err.println(executeCommand("fabric:ensemble-add --force child1 child2"));
+            Provision.containersStatus(Arrays.asList(child1, child2), "success", PROVISION_TIMEOUT);
+			System.err.println(executeCommand("fabric:ensemble-add --force --migration-timeout 240000 child1 child2", 240000L, false));
 			Thread.sleep(5000);
             getCurator().getZookeeperClient().blockUntilConnectedOrTimedOut();
 			System.err.println(executeCommand("fabric:container-list"));
-			System.err.println(executeCommand("fabric:ensemble-remove --force child1 child2"));
+			System.err.println(executeCommand("fabric:ensemble-remove --force --migration-timeout 240000 child1 child2", 240000L, false));
 			Thread.sleep(5000);
             getCurator().getZookeeperClient().blockUntilConnectedOrTimedOut();
 			System.err.println(executeCommand("fabric:container-list"));
@@ -97,7 +95,6 @@ public class ExtendedJoinTest extends FabricTestSupport {
 	public Option[] config() {
 		return new Option[]{
 				new DefaultCompositeOption(fabricDistributionConfiguration()),
-				//debugConfiguration("5005", false),
 				editConfigurationFilePut("etc/system.properties", "karaf.name", "myroot"),
 				editConfigurationFilePut("etc/system.properties", "fabric.version", MavenUtils.getArtifactVersion("org.fusesource.fabric", "fuse-fabric"))
 		};
