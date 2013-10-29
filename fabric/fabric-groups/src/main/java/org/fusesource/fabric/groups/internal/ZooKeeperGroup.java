@@ -177,11 +177,9 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     public void close() throws IOException {
         if (started.compareAndSet(true, false)) {
             client.getConnectionStateListenable().removeListener(connectionStateListener);
-            executorService.shutdown();
+            executorService.shutdownNow();
             try {
-                if (!executorService.awaitTermination(5, TimeUnit.SECONDS)) {
-                  executorService.shutdownNow();
-                }
+                executorService.awaitTermination(5, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 throw (IOException) new InterruptedIOException().initCause(e);
             }
@@ -427,7 +425,7 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
         try {
             Stat stat = new Stat();
             byte[] bytes = client.getData().storingStatIn(stat).forPath(fullPath);
-            currentData.put(fullPath, new ChildData(fullPath, stat, bytes, decode(bytes)));
+            currentData.put(fullPath, new ChildData<T>(fullPath, stat, bytes, decode(bytes)));
         } catch (KeeperException.NoNodeException ignore) {
             // node no longer exists - remove it
             currentData.remove(fullPath);
@@ -483,8 +481,8 @@ public class ZooKeeperGroup<T extends NodeState> implements Group<T> {
     private void applyNewData(String fullPath, int resultCode, Stat stat, byte[] bytes) {
         if (resultCode == KeeperException.Code.OK.intValue()) {
             // otherwise - node must have dropped or something - we should be getting another event
-            ChildData data = new ChildData(fullPath, stat, bytes, decode(bytes));
-            ChildData previousData = currentData.put(fullPath, data);
+            ChildData<T> data = new ChildData<T>(fullPath, stat, bytes, decode(bytes));
+            ChildData<T> previousData = currentData.put(fullPath, data);
             if (previousData == null || previousData.getStat().getVersion() != stat.getVersion()) {
                 offerOperation(new EventOperation(this, GroupListener.GroupEvent.CHANGED));
             }
