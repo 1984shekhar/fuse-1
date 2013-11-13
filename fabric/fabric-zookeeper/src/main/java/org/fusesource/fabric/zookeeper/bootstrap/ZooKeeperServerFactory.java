@@ -17,6 +17,7 @@
 package org.fusesource.fabric.zookeeper.bootstrap;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -28,7 +29,6 @@ import org.apache.felix.scr.annotations.ConfigurationPolicy;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Modified;
 import org.apache.felix.scr.annotations.Reference;
-import org.apache.felix.scr.annotations.Service;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
 import org.apache.zookeeper.server.ServerConfig;
 import org.apache.zookeeper.server.ServerStats;
@@ -49,8 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @ThreadSafe
-@Component(name = Constants.ZOOKEEPER_SERVER_PID, policy = ConfigurationPolicy.OPTIONAL, immediate = true)
-@Service(ZooKeeperServerFactory.class)
+@Component(name = Constants.ZOOKEEPER_SERVER_PID, policy = ConfigurationPolicy.REQUIRE, immediate = true)
 public class ZooKeeperServerFactory extends AbstractComponent {
 
     static final Logger LOGGER = LoggerFactory.getLogger(ZooKeeperServerFactory.class);
@@ -88,6 +87,25 @@ public class ZooKeeperServerFactory extends AbstractComponent {
         Properties props = new Properties();
         for (Entry<String, ?> entry : configuration.entrySet()) {
             props.put(entry.getKey(), entry.getValue());
+        }
+
+        // Create myid file
+        String serverId = (String) props.get("server.id");
+        if (serverId != null) {
+            props.remove("server.id");
+            File myId = new File((String) props.get("dataDir"), "myid");
+            if (myId.exists() && !myId.delete()) {
+                throw new IOException("Failed to delete " + myId);
+            }
+            if (myId.getParentFile() == null || (!myId.getParentFile().exists() && !myId.getParentFile().mkdirs())) {
+                throw new IOException("Failed to create " + myId.getParent());
+            }
+            FileOutputStream fos = new FileOutputStream(myId);
+            try {
+                fos.write((serverId + "\n").getBytes());
+            } finally {
+                fos.close();
+            }
         }
 
         QuorumPeerConfig peerConfig = getPeerConfig(props);
@@ -161,9 +179,11 @@ public class ZooKeeperServerFactory extends AbstractComponent {
         LOGGER.info("Destroying zookeeper server: {}", destroyable);
         if (registration != null) {
             registration.unregister();
+            registration = null;
         }
         if (destroyable != null) {
             destroyable.destroy();
+            destroyable = null;
         }
     }
 
