@@ -99,7 +99,7 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         role =  configuration != null && configuration.containsKey(ROLE_PROPERTY_NAME) ? (String)configuration.get(ROLE_PROPERTY_NAME) : DEFAULT_ROLE;
 
         registerServlet();
-        group = new ZooKeeperGroup(curator.get(), ZkPath.GIT.getPath(), GitNode.class);
+        group = new ZooKeeperGroup<GitNode>(curator.get(), ZkPath.GIT.getPath(), GitNode.class);
         group.add(this);
         group.update(createState());
         group.start();
@@ -135,7 +135,7 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         }
     }
 
-    private void updateMasterUrl(Group group) {
+    private void updateMasterUrl(Group<GitNode> group) {
         if (group.isMaster()) {
             LOGGER.debug("Git repo is the master");
         } else {
@@ -154,7 +154,7 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         }
     }
 
-    private synchronized void registerServlet() {
+    private void registerServlet() {
         try {
             HttpContext base = httpService.get().createDefaultHttpContext();
             HttpContext secure = new SecureHttpContext(base, realm, role);
