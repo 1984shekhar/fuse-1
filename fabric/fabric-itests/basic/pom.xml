@@ -75,12 +75,6 @@
             <version>${fabric.version}</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.fusesource.fabric</groupId>
-            <artifactId>fabric-git-zkbridge</artifactId>
-            <version>${fabric.version}</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- Jclouds Dependencies -->
         <dependency>
