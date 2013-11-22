@@ -17,7 +17,21 @@
     <name>JBoss Fuse :: ESB :: Integration Tests</name>
 
     <modules>
-        <module>smoke</module>
+        <module>common</module>
+        <module>boot</module>
     </modules>
 
-</project>
+    <profiles>
+        <profile>
+            <id>ts.all</id>
+            <activation>
+                <property>
+                    <name>ts.all</name>
+                </property>
+            </activation>
+            <modules>
+                <module>smoke</module>
+            </modules>
+        </profile>
+    </profiles>
+  </project>
