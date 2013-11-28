@@ -26,7 +26,6 @@ import static org.fusesource.fabric.zookeeper.utils.ZooKeeperUtils.setProperties
 
 import java.io.File;
 import java.io.IOException;
-import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,7 +34,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -45,6 +43,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.felix.utils.properties.Properties;
 import org.eclipse.jgit.api.CreateBranchCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ListBranchCommand;
@@ -661,7 +660,17 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
         if (configuration == null) {
             doRecursiveDeleteAndRemove(git, file);
         } else {
-            Files.writeToFile(file, DataStoreUtils.toBytes(configuration));
+            Properties props = new Properties(file);
+            for (Map.Entry<String, String> entry : configuration.entrySet()) {
+                props.setProperty(entry.getKey(), entry.getValue());
+            }
+            for (String key : new ArrayList<String>(props.keySet())) {
+                if (!configuration.containsKey(key)) {
+                    props.remove(key);
+                }
+            }
+            props.save();
+            props.save(System.err);
             doAddFiles(git, file);
         }
     }
@@ -710,15 +719,17 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     }
 
     @Override
-    public void setConfiguration(String version, String profile, String pid, Map<String, String> configuration) {
+    public void setConfiguration(final String version, final String profile, final String pid, final Map<String, String> configuration) {
         assertValid();
-        byte[] data;
-        try {
-            data = DataStoreUtils.toBytes(DataStoreUtils.toProperties(configuration));
-        } catch (IOException e) {
-            throw FabricException.launderThrowable(e);
-        }
-        setFileConfiguration(version, profile, pid + PROPERTIES_SUFFIX, data);
+        gitOperation(new GitOperation<Void>() {
+            public Void call(Git git, GitContext context) throws Exception {
+                checkoutVersion(git, GitProfiles.getBranch(version, profile));
+                doSetConfiguration(git, profile, pid, configuration);
+                context.setPushBranch(version);
+                context.commit("Updated configuration for profile " + profile);
+                return null;
+            }
+        });
     }
 
     @Override
@@ -1234,8 +1245,8 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     protected Map<String, String> doLoadConfiguration(File file) throws IOException {
         assertValid();
         Properties props = new Properties();
-        props.load(new StringReader(Files.toString(file)));
-        return DataStoreUtils.toMap(props);
+        props.load(file);
+        return props;
     }
 
     protected String getFilePattern(File rootDir, File file) throws IOException {
