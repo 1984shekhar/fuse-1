@@ -4,7 +4,7 @@ The **Process Manager** bundle provides support for running *managed processes* 
 
 A managed process keeps running if the Process Manager is restarted and it can still start/stop/restart/uninstall the process after it itself is restarted; as the Process Manager knows how to find the underlying operating system process ID (PID) of each managed process.
 
-The Process Manager can run any application; in which case it acts like using init.d, xinit.d, daemontools, monit and other kinds of unix process manager. The difference though is the Process Manager can act at the Fuse Fabric level since we can use [Fabric Profiles](http://fuse.fusesource.org/fabric/docs/fabric-profiles.html) to determine which machines run which proceses in a fabric.
+The Process Manager can run any application; in which case it acts like using init.d, xinit.d, daemontools, monit and other kinds of unix process manager. The difference though is the Process Manager can act at the Fabric8 level since we can use [Fabric Profiles](http://fuse.fusesource.org/fabric/docs/fabric-profiles.html) to determine which machines run which proceses in a fabric.
 
 A *managed process* is similar conceptually to *child containers* in a root Apache Karaf container; each managed process is a separate, stand alone operating system process installed in a sub directory of **${karaf-home}/processes** and is managed by the root container to install/start/stop/restart/uninstall the process.
 
@@ -21,7 +21,7 @@ This means you can have fine grained process isolation at the JAR level. Rather 
 
 One bad managed process will not affect any others and each process can be easily stopped without affecting any others.
 
-This means with Fuse you can easily move your Java code between OSGi bundles, [Fuse Bundles](../../bundle/index.html) or *managed processes* depending on your coupling, scaling or process isolation requirements.
+This means with Fabric8 you can easily move your Java code between OSGi bundles, [Fuse Bundles](../../bundle/index.html) or *managed processes* depending on your coupling, scaling or process isolation requirements.
 
 
 ### Managing processes like Tomcat, Jetty, HQ Agent
@@ -99,7 +99,7 @@ You can use the **process:install-jar** command to install a jar as a managed pr
 
 e.g. to create a managed process from this [sample jar](https://github.com/fusesource/fuse/blob/master/process/samples/process-sample-camel-spring):
 
-     process:install-jar org.fusesource.fabric.samples process-sample-camel-spring 99-master-SNAPSHOT
+     process:install-jar io.fabric8.samples process-sample-camel-spring 99-master-SNAPSHOT
 
 This will then download the jar using the maven coordinates (groupID / artifactId / version) and create a binary installation with the launcher to start/stop/restart the process etc
 
@@ -109,7 +109,7 @@ Some jars just contain, say, Spring XML or blueprints and don't contain an execu
 
 For example:
 
-    process:install-jar -m org.apache.camel.spring.Main org.fusesource.fabric.samples process-sample-camel-spring-just-xml 99-master-SNAPSHOT
+    process:install-jar -m org.apache.camel.spring.Main io.fabric8.samples process-sample-camel-spring-just-xml 99-master-SNAPSHOT
 
 This will then boot up all the Spring XML files in the META-INF/spring/*.xml URI on the classpath.
 
@@ -124,4 +124,4 @@ Generally its a case of
 
 So to install the above sample as a tarball use:
 
-    process:install mvn:org.fusesource.fabric.samples/process-sample-camel-spring/99-master-SNAPSHOT/tar.gz
+    process:install mvn:io.fabric8.samples/process-sample-camel-spring/99-master-SNAPSHOT/tar.gz
