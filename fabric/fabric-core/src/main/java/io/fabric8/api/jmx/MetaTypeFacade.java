@@ -39,7 +39,7 @@ import javax.management.ObjectName;
 /**
  * An MBean for interacting with the OSGi MetaType API
  */
-@Component(description = "Fabric MetaType JMX MBean")
+@Component(description = "MetaType Facade JMX MBean")
 public class MetaTypeFacade implements MetaTypeFacadeMXBean {
     private static final transient Logger LOG = LoggerFactory.getLogger(MetaTypeFacade.class);
 
@@ -53,8 +53,6 @@ public class MetaTypeFacade implements MetaTypeFacadeMXBean {
         }
     }
 
-    @Reference(referenceInterface = FabricService.class)
-    private FabricService fabricService;
     @Reference(referenceInterface = MetaTypeService.class)
     private MetaTypeService metaTypeService;
     @Reference(referenceInterface = MBeanServer.class)
@@ -80,7 +78,6 @@ public class MetaTypeFacade implements MetaTypeFacadeMXBean {
             JMXUtils.unregisterMBean(mbeanServer, OBJECT_NAME);
         }
     }
-
 
     @Override
     public MetaTypeInformationDTO getMetaTypeInformationForBundleId(long bundleId) {
@@ -110,6 +107,39 @@ public class MetaTypeFacade implements MetaTypeFacadeMXBean {
             }
         }
         return answer;
+    }
+
+    @Override
+    public MetaTypeObjectDTO getPidMetaTypeObject(String pid, String locale) {
+        Bundle[] bundles = bundleContext.getBundles();
+        MetaTypeObjectDTO answer = null;
+        for (Bundle bundle : bundles) {
+            MetaTypeInformation info = getMetaTypeInformation(bundle);
+            if (info != null) {
+                ObjectClassDefinition object = tryGetObjectClassDefinition(info, pid, locale);
+                if (object != null) {
+                    if (answer == null) {
+                        answer = new MetaTypeObjectDTO(object);
+                    } else {
+                        answer.appendObjectDefinition(object);
+                    }
+                }
+            }
+        }
+        return answer;
+    }
+
+    /**
+     * Attempts to get the object definition ignoring any failures of missing declarations
+     */
+    public static ObjectClassDefinition tryGetObjectClassDefinition(MetaTypeInformation info, String pid, String locale) {
+        ObjectClassDefinition object = null;
+        try {
+            object = info.getObjectClassDefinition(pid, locale);
+        } catch (Exception e) {
+            // ignore missing definition
+        }
+        return object;
     }
 
     @Override
