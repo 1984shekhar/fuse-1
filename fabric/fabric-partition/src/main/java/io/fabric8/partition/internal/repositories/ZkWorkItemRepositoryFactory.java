@@ -29,19 +29,20 @@ import org.osgi.service.url.URLStreamHandlerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@Component(name = ZkWorkItemRepositoryFactory.ID, description = "ZooKeeper Work Item WorkItemRepository", immediate = true)
+@Component(name = ZkWorkItemRepositoryFactory.ID, description = "ZooKeeper Work Item WorkItemRepository")
 @Service(WorkItemRepositoryFactory.class)
 public class ZkWorkItemRepositoryFactory extends AbstractComponent implements WorkItemRepositoryFactory {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ZkWorkItemRepositoryFactory.class);
 
     public static final String TYPE = "zookeeper";
+    public static final String SCHEME = "zk";
     public static final String ID = ID_PREFIX + TYPE;
 
     @Reference(referenceInterface = CuratorFramework.class)
     private final ValidatingReference<CuratorFramework> curator = new ValidatingReference<CuratorFramework>();
 
-    @Reference(referenceInterface = URLStreamHandlerService.class, target = "url.handler.protocol=zk")
+    @Reference(referenceInterface = URLStreamHandlerService.class, target = "url.handler.protocol=" + SCHEME)
     private final ValidatingReference<URLStreamHandlerService> urlHandler = new ValidatingReference<URLStreamHandlerService>();
 
 

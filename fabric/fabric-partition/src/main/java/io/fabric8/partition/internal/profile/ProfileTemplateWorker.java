@@ -16,8 +16,10 @@
 
 package io.fabric8.partition.internal.profile;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
 import io.fabric8.api.Container;
 import io.fabric8.api.FabricException;
@@ -30,7 +32,6 @@ import io.fabric8.api.jcip.ThreadSafe;
 import io.fabric8.api.locks.LockService;
 import io.fabric8.api.scr.AbstractComponent;
 import io.fabric8.api.scr.ValidatingReference;
-import io.fabric8.internal.ProfileImpl;
 import io.fabric8.partition.TaskContext;
 import io.fabric8.partition.WorkItem;
 import io.fabric8.partition.Worker;
@@ -45,7 +46,6 @@ import org.mvel2.templates.CompiledTemplate;
 import org.mvel2.templates.TemplateCompiler;
 import org.mvel2.templates.TemplateRuntime;
 import org.osgi.service.component.annotations.Activate;
-import org.osgi.service.wireadmin.Producer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,7 @@ import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -62,7 +63,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 @ThreadSafe
-@Component(name = "io.fabric8.partition.listener.profile", description = "Fabric Profile Partition Listener", immediate = true)
+@Component(name = "io.fabric8.partition.worker.profile", description = "Fabric Profile Partition Wroker")
 @Service(Worker.class)
 public final class ProfileTemplateWorker extends AbstractComponent implements Worker {
 
@@ -74,6 +75,8 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
     private static final String PROPERTIES_SUFFIX = ".properties";
     private static final String PROFILE_WORKER_LOCK = "/fabric/registry/locks/partionworker";
 
+    public static final String TEMPLATE_PROFILE_PROPERTY_NAME = "template.profile";
+
     @Reference(referenceInterface = FabricService.class)
     private final ValidatingReference<FabricService> fabricService = new ValidatingReference<FabricService>();
     @Reference(referenceInterface = LockService.class)
@@ -84,7 +87,7 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
     @GuardedBy("this")
     private final Map<Key, CompiledTemplate> templates = new HashMap<Key, CompiledTemplate>();
     @GuardedBy("this")
-    private final SetMultimap<TaskContext, WorkItem> assignedWorkItems = HashMultimap.<TaskContext, WorkItem>create();
+    private final SetMultimap<TaskContext, WorkItem> assignedWorkItems = Multimaps.synchronizedSetMultimap(HashMultimap.<TaskContext, WorkItem>create());
     @GuardedBy("this")
     private final ParserContext parserContext = new ParserContext();
 
@@ -108,10 +111,7 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
     }
 
     private synchronized void destroyInternal() {
-        for (TaskContext context : assignedWorkItems.keySet()) {
-            release(context, assignedWorkItems.get(context));
-        }
-        templates.clear();
+        stopAll();
     }
 
     @Override
@@ -123,19 +123,50 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
     @Override
     public synchronized void assign(TaskContext context, Set<WorkItem> workItems) {
         assertValid();
+        validateTaskContext(context);
         executorService.submit(new AssignTask(context, workItems));
     }
 
     @Override
     public synchronized void release(TaskContext context, Set<WorkItem> workItems) {
         assertValid();
+        validateTaskContext(context);
         executorService.submit(new ReleaseTask(context, workItems));
+    }
+
+    @Override
+    public void stop(TaskContext context) {
+        Container current = fabricService.get().getCurrentContainer();
+        Version version = current.getVersion();
+        String profileId = context.getConfiguration().get(TEMPLATE_PROFILE_PROPERTY_NAME) + "-" + name;
+        if (version.hasProfile(profileId)) {
+            //Just delete the profile
+            version.getProfile(profileId).delete(true);
+        }
+    }
+
+    @Override
+    public synchronized void stopAll() {
+        for (TaskContext context : assignedWorkItems.keySet()) {
+            stop(context);
+        }
+        templates.clear();
+    }
+
+    private void validateTaskContext(TaskContext context) {
+      if (context == null) {
+          throw new IllegalArgumentException("Task context cannot be null");
+      } else if (context.getConfiguration() == null || context.getConfiguration().isEmpty()) {
+          throw new IllegalArgumentException("Task context configuration cannot be null");
+      } else if (!context.getConfiguration().containsKey(TEMPLATE_PROFILE_PROPERTY_NAME)) {
+          throw new IllegalArgumentException("Task context configuration: Missing required property: " + TEMPLATE_PROFILE_PROPERTY_NAME);
+      }
     }
 
     private void manageProfile(TaskContext context) {
         Container current = fabricService.get().getCurrentContainer();
         ProfileData profileData = createProfileData(context);
-        String profileId = context.getDefinition() + "-" + name;
+        String profileId = context.getConfiguration().get(TEMPLATE_PROFILE_PROPERTY_NAME) + "-" + name;
         Version version = current.getVersion();
 
         try {
@@ -177,18 +208,21 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
             return profileData;
         }
 
-
         Container current = fabricService.get().getCurrentContainer();
         Version version = current.getVersion();
-        Profile templateProfile = version.getProfile(context.getDefinition());
-        Iterable<String> fileTemplates = Iterables.filter(templateProfile.getFileConfigurations().keySet(), new MvelPredicate());
+        String templateProfileName = String.valueOf(context.getConfiguration().get(TEMPLATE_PROFILE_PROPERTY_NAME));
+        Profile templateProfile = version.getProfile(templateProfileName);
+        Set<String> allFiles = templateProfile.getFileConfigurations().keySet();
+        Iterable<String> mvelFiles = Iterables.filter(allFiles, MvelPredicate.INSTANCE);
+        Iterable<String> plainFiles = Iterables.filter(allFiles, Predicates.not(MvelPredicate.INSTANCE));
 
-        for (String fileTemplate : fileTemplates) {
-            Key key = new Key(templateProfile.getId(), fileTemplate);
+
+        for (String mvelFile : mvelFiles) {
+            Key key = new Key(templateProfile.getId(), mvelFile);
             synchronized (templates) {
                 CompiledTemplate template = templates.get(key);
                 if (template == null) {
-                    template = TemplateCompiler.compileTemplate(new String(templateProfile.getFileConfigurations().get(fileTemplate)), parserContext);
+                    template = TemplateCompiler.compileTemplate(new String(templateProfile.getFileConfigurations().get(mvelFile)), parserContext);
                     templates.put(key, template);
                 }
             }
@@ -198,7 +232,8 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
             Map<String, WorkItem> data = new HashMap<String, WorkItem>();
             data.put(WorkItem.ITEM, workItem);
 
-            for (String fileTemplate : fileTemplates) {
+            //Render templates
+            for (String fileTemplate : mvelFiles) {
                 String file = renderTemplateName(fileTemplate, workItem);
                 Key key = new Key(templateProfile.getId(), fileTemplate);
                 try {
@@ -208,8 +243,24 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
                     LOGGER.warn("Failed to render {}. Ignoring.", fileTemplate);
                 }
             }
+
+            //Copy plain files.
+            for (String file : plainFiles) {
+                    String content = new String(templateProfile.getFileConfigurations().get(file));
+                    updateProfileData(file, content, profileData);
+            }
         }
         return profileData;
+    }
+
+    private void releaseLock() {
+        try {
+            if (lock.isAcquiredInThisProcess()) {
+                lock.release();
+            }
+        } catch (Exception e) {
+            throw FabricException.launderThrowable(e);
+        }
     }
 
     private static void updateProfileData(String file, String data, ProfileData profileData) {
@@ -224,16 +275,6 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
             profileData.addFile(file, toString(merged).getBytes());
         } else {
             profileData.addFile(file, data.getBytes());
-        }
-    }
-
-    private void releaseLock() {
-        try {
-            if (lock.isAcquiredInThisProcess()) {
-                lock.release();
-            }
-        } catch (Exception e) {
-            throw FabricException.launderThrowable(e);
         }
     }
 
@@ -374,11 +415,15 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
 
         @Override
         public void run() {
-            if (items.isEmpty()) {
-                return;
+            try {
+                if (items.isEmpty()) {
+                    return;
+                }
+                assignedWorkItems.putAll(context, items);
+                manageProfile(context);
+            } catch (Exception ex) {
+                LOGGER.debug("Error assigning items.", ex);
             }
-            assignedWorkItems.putAll(context, items);
-            manageProfile(context);
         }
     }
 
@@ -394,13 +439,17 @@ public final class ProfileTemplateWorker extends AbstractComponent implements Wo
 
         @Override
         public void run() {
-            if (items.isEmpty()) {
-                return;
+            try {
+                if (items.isEmpty()) {
+                    return;
+                }
+                for (WorkItem workItem : items) {
+                    assignedWorkItems.remove(context, workItem);
+                }
+                manageProfile(context);
+            } catch (Exception ex) {
+                LOGGER.debug("Error releasing items.", ex);
             }
-            for (WorkItem workItem : items) {
-                assignedWorkItems.remove(context, workItem);
-            }
-            manageProfile(context);
         }
     }
 }
