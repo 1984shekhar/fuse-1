@@ -21,7 +21,7 @@
   <parent>
     <groupId>org.fusesource</groupId>
     <artifactId>fuse-project</artifactId>
-    <version>7.3.0.redhat-SNAPSHOT</version>
+    <version>1.0.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -41,6 +41,7 @@
     <module>insight-log</module>
     <module>insight-log-storage</module>
     <module>insight-elasticsearch</module>
+    <module>insight-itests</module>
   </modules>
 
     <profiles>
@@ -55,6 +56,7 @@
                 <module>insight-log4j</module>
                 <module>insight-maven</module>
                 <module>insight-metrics</module>
+                <module>insight-itests</module>
             </modules>
         </profile>
         <profile>

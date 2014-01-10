@@ -20,7 +20,7 @@
     <parent>
         <groupId>org.fusesource</groupId>
         <artifactId>fuse-project</artifactId>
-        <version>7.3.0.redhat-SNAPSHOT</version>
+        <version>1.0.0-SNAPSHOT</version>
         <relativePath>../parent</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
@@ -75,6 +75,7 @@
         <module>fabric-zookeeper</module>
         <module>fabric-zookeeper-spring</module>
         <module>fabric-zookeeper-commands</module>
+        <module>fuse-fabric</module>
         
         <!--
         TODO disabled until they work in 2.12 of camel
@@ -142,16 +143,5 @@
                 <module>fabric-scala</module>
             </modules>
         </profile>
-
-      <profile>
-        <id>jdk17</id>
-        <activation>
-          <jdk>[1.7,)</jdk>
-        </activation>
-
-        <modules>
-          <module>fuse-fabric</module>
-        </modules>
-      </profile>
     </profiles>
 </project>

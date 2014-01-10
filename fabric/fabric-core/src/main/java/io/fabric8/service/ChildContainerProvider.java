@@ -50,7 +50,7 @@ import io.fabric8.utils.AuthenticationUtils;
 import io.fabric8.utils.Ports;
 import io.fabric8.zookeeper.ZkDefs;
 @ThreadSafe
-@Component(name = "io.fabric8.container.provider.child", description = "Child Container Provider", immediate = true)
+@Component(name = "io.fabric8.container.provider.child", label = "Fabric8 Child Container Provider", immediate = true, metatype = false)
 @Service(ContainerProvider.class)
 public final class ChildContainerProvider extends AbstractComponent implements ContainerProvider<CreateChildContainerOptions, CreateChildContainerMetadata> {
 
@@ -110,7 +110,7 @@ public final class ChildContainerProvider extends AbstractComponent implements C
             jvmOptsBuilder.append(" ").append(options.getJvmOpts());
         }
 
-        if (options.getJvmOpts() != null && !options.getJvmOpts().contains("-XX:+UnlockDiagnosticVMOptions -XX:+UnsyncloadClass")) {
+        if (options.getJvmOpts() == null || !options.getJvmOpts().contains("-XX:+UnlockDiagnosticVMOptions -XX:+UnsyncloadClass")) {
             jvmOptsBuilder.append(" -XX:+UnlockDiagnosticVMOptions -XX:+UnsyncloadClass");
         }
 

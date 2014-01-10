@@ -16,6 +16,7 @@
  */
 package io.fabric8.openshift;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import com.openshift.client.IGearProfile;
 import com.openshift.client.OpenShiftTimeoutException;
 
+import io.fabric8.api.FabricException;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.ConfigurationPolicy;
@@ -57,8 +59,8 @@ import com.openshift.client.IOpenShiftConnection;
 import com.openshift.client.IUser;
 import com.openshift.client.cartridge.EmbeddableCartridge;
 import com.openshift.client.cartridge.IEmbeddableCartridge;
+import com.openshift.client.cartridge.StandaloneCartridge;
 import com.openshift.internal.client.GearProfile;
-import com.openshift.internal.client.StandaloneCartridge;
 
 import javax.management.InstanceAlreadyExistsException;
 import javax.management.InstanceNotFoundException;
@@ -69,7 +71,7 @@ import javax.management.NotCompliantMBeanException;
 import javax.management.ObjectName;
 
 @ThreadSafe
-@Component(name = "io.fabric8.container.provider.openshift", description = "Fabric Openshift Container Provider", policy = ConfigurationPolicy.OPTIONAL, immediate = true)
+@Component(name = "io.fabric8.container.provider.openshift", label = "Fabric8 Openshift Container Provider", policy = ConfigurationPolicy.OPTIONAL, immediate = true, metatype = true)
 @Service(ContainerProvider.class)
 public final class OpenshiftContainerProvider extends AbstractComponent implements ContainerProvider<CreateOpenshiftContainerOptions, CreateOpenshiftContainerMetadata>, ContainerAutoScalerFactory {
 
@@ -77,6 +79,8 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
     public static final String PROPERTY_AUTOSCALE_LOGIN = "autoscale.login";
     public static final String PROPERTY_AUTOSCALE_PASSWORD = "autoscale.password";
     public static final String PROPERTY_AUTOSCALE_DOMAIN = "autoscale.domain";
+
+    public static final String PREFIX_CARTRIDGE_ID = "id:";
 
     private static final transient Logger LOG = LoggerFactory.getLogger(OpenshiftContainerProvider.class);
 
@@ -172,7 +176,12 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         String[] cartridgeUrls = cartridgeUrl.split(" ");
         LOG.info("Creating cartridges: " + cartridgeUrl);
         String standAloneCartridgeUrl = cartridgeUrls[0];
-        StandaloneCartridge cartridge = new StandaloneCartridge(standAloneCartridgeUrl);
+        StandaloneCartridge cartridge;
+        if (standAloneCartridgeUrl.startsWith(PREFIX_CARTRIDGE_ID)) {
+            cartridge = new StandaloneCartridge(standAloneCartridgeUrl.substring(PREFIX_CARTRIDGE_ID.length()));
+        } else {
+            cartridge = new StandaloneCartridge(new URL(standAloneCartridgeUrl));
+        }
 
         String zookeeperUrl = fabricService.get().getZookeeperUrl();
         String zookeeperPassword = fabricService.get().getZookeeperPassword();
@@ -212,19 +221,17 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         for (int idx = 1,  size = cartridgeUrls.length; idx < size; idx++) {
             String embeddedUrl = cartridgeUrls[idx];
             LOG.info("Adding embedded cartridge: " + embeddedUrl);
-            list.add(new EmbeddableCartridge(embeddedUrl));
+            if (embeddedUrl.startsWith(PREFIX_CARTRIDGE_ID)) {
+                list.add(new EmbeddableCartridge(embeddedUrl.substring(PREFIX_CARTRIDGE_ID.length())));
+            } else {
+                list.add(new EmbeddableCartridge(new URL(embeddedUrl)));
+            }
         }
         if (!list.isEmpty()) {
             application.addEmbeddableCartridges(list);
         }
 
         String gitUrl = application.getGitUrl();
-/*
-        // now we pass in the environemnt variables we don't need to restart
-        if (!options.isEnsembleServer()) {
-            application.restart();
-        }
-*/
         CreateOpenshiftContainerMetadata metadata = new CreateOpenshiftContainerMetadata(domain.getId(), application.getUUID(), application.getCreationLog(), gitUrl);
         metadata.setContainerName(containerName);
         metadata.setCreateOptions(options);
@@ -234,19 +241,22 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
     @Override
     public void start(Container container) {
         assertValid();
-        getContainerApplication(container).start();
+        getContainerApplication(container, true).start();
     }
 
     @Override
     public void stop(Container container) {
         assertValid();
-        getContainerApplication(container).stop();
+        getContainerApplication(container, true).stop();
     }
 
     @Override
     public void destroy(Container container) {
         assertValid();
-        getContainerApplication(container).destroy();
+        IApplication app = getContainerApplication(container, false);
+        if (app != null) {
+            app.destroy();
+        }
     }
 
     @Override
@@ -303,14 +313,17 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         return answer;
     }
 
-    private IApplication getContainerApplication(Container container) {
+    private IApplication getContainerApplication(Container container, boolean required) {
+        IApplication app = null;
         CreateOpenshiftContainerMetadata metadata = OpenShiftUtils.getContainerMetadata(container);
         if (metadata != null) {
             IOpenShiftConnection connection = getOrCreateConnection(metadata.getCreateOptions());
-            return OpenShiftUtils.getApplication(container, metadata, connection);
-        } else {
-            return null;
+            app = OpenShiftUtils.getApplication(container, metadata, connection);
         }
+        if (app == null && required) {
+            throw new FabricException("Unable to find OpenShift application for " + container.getId());
+        }
+        return app;
     }
 
     /**
