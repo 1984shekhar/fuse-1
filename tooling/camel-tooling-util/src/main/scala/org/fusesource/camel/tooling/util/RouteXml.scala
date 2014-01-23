@@ -33,7 +33,7 @@ import org.apache.camel.model.ModelCamelContext;
 import org.apache.camel.impl.DefaultCamelContext
 import org.apache.camel.model.{RoutesDefinition, RouteDefinition, Constants}
 import org.apache.camel.blueprint.{CamelEndpointFactoryBean => BlueprintCamelEndpointFactoryBean}
-import org.apache.camel.spring.{CamelEndpointFactoryBean, CamelContextFactoryBean}
+import org.apache.camel.spring.{CamelRouteContextFactoryBean, CamelEndpointFactoryBean, CamelContextFactoryBean}
 
 import org.fusesource.scalate.util.{ClassLoaders, Logging, IOUtil}
 import de.pdark.decentxml._
@@ -327,7 +327,8 @@ case class XmlModel(contextElement: CamelContextFactoryBean,
                     beans: Map[String, String],
                     node: Option[Node],
                     ns: String = CamelNamespaces.springNS,
-                    justRoutes: Boolean = false) extends Logging {
+                    justRoutes: Boolean = false,
+                    routesContext : Boolean = false) extends Logging {
 
   /**
    * Returns the root element to be marshalled as XML
@@ -531,7 +532,7 @@ class RouteXml extends Logging {
     }
 
     // now lets pull out the jaxb routes...
-    val search = List((springNS, "camelContext"), (springNS, "routes"), (blueprintNS, "camelContext"), (blueprintNS, "routes"))
+    val search = List((springNS, "routeContext"), (springNS, "camelContext"), (springNS, "routes"), (blueprintNS, "routeContext"), (blueprintNS, "camelContext"), (blueprintNS, "routes"))
 
     val found = search.flatMap {
       case (ns, en) =>
@@ -564,6 +565,7 @@ class RouteXml extends Logging {
           node
         }
         var justRoutes = false
+        var routesContext = false
         val xmlText = nodeWithNamespacesToText(parseNode, node.asInstanceOf[Element])
         val context = unmarshaller.unmarshal(new StringReader(xmlText)) match {
           case sc: CamelContextFactoryBean =>
@@ -574,11 +576,23 @@ class RouteXml extends Logging {
             val sc = new CamelContextFactoryBean()
             sc.setRoutes(rd.getRoutes)
             sc
+          case rc: CamelRouteContextFactoryBean =>
+            justRoutes = false
+            routesContext = true
+            val sc = new CamelContextFactoryBean()
+            sc.setRoutes(rc.getRoutes)
+            sc
+          case bprc : org.apache.camel.blueprint.CamelRouteContextFactoryBean =>
+            justRoutes = false
+            routesContext = true
+            val sc = new CamelContextFactoryBean()
+            sc.setRoutes(bprc.getRoutes)
+            sc
           case n =>
             warn("Unmarshalled not a CamelContext: " + n)
             new CamelContextFactoryBean
         }
-        XmlModel(context, doc, beans, Some(node), ns, justRoutes)
+        XmlModel(context, doc, beans, Some(node), ns, justRoutes, routesContext)
 
       case n =>
         info(message + " does not contain a CamelContext. Maybe the XML namespace is not spring: '" + springNS + "' or blueprint: '" + blueprintNS + "'?")
@@ -745,7 +759,9 @@ class RouteXml extends Logging {
     //val camelElem = doc.importNode(element, true)
     val camelElem = element
 
-    if (model.justRoutes) {
+    if (model.routesContext && camelDoc.getRootElement.getName == "camelContext") {
+      camelDoc.getRootElement.setName("routeContext")
+    } else if (model.justRoutes) {
       replaceChild(doc, camelElem, docElem)
     } else {
       model.node match {
