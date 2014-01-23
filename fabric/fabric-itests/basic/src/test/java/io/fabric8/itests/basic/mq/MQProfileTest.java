@@ -6,6 +6,10 @@ import io.fabric8.itests.paxexam.support.ContainerBuilder;
 import io.fabric8.itests.paxexam.support.FabricTestSupport;
 import io.fabric8.itests.paxexam.support.Provision;
 import org.apache.activemq.broker.jmx.BrokerViewMBean;
+import org.apache.activemq.command.DiscoveryEvent;
+import org.apache.activemq.transport.discovery.DiscoveryListener;
+import org.apache.curator.framework.CuratorFramework;
+import org.fusesource.mq.fabric.FabricDiscoveryAgent;
 import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -21,9 +25,12 @@ import javax.management.ObjectName;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.ops4j.pax.exam.CoreOptions.scanFeatures;
 
 @RunWith(JUnit4TestRunner.class)
@@ -37,7 +44,6 @@ public class MQProfileTest extends FabricTestSupport {
     }
 
     @Test
-    @Ignore("[FABRIC-674] Fix fabric basic MQProfileTest")
     public void testLocalChildCreation() throws Exception {
 
         System.err.println(executeCommand("fabric:create -n"));
@@ -50,8 +56,10 @@ public class MQProfileTest extends FabricTestSupport {
 
         Provision.provisioningSuccess(Arrays.asList(broker), PROVISION_TIMEOUT);
 
+        waitForBroker("default");
+
         // check jmx stats
-        final BrokerViewMBean bean = (BrokerViewMBean)Provision.getMBean(broker, new ObjectName("org.apache.activemq:type=Broker,brokerName=" + broker.getId()), BrokerViewMBean.class, 30000);
+        final BrokerViewMBean bean = (BrokerViewMBean)Provision.getMBean(broker, new ObjectName("org.apache.activemq:type=Broker,brokerName=" + broker.getId()), BrokerViewMBean.class, 120000);
         assertEquals("Producer not present", 0, bean.getTotalProducerCount());
         assertEquals("Consumer not present", 0, bean.getTotalConsumerCount());
 
@@ -71,7 +79,7 @@ public class MQProfileTest extends FabricTestSupport {
                 }
                 return true;
             }
-        }, 30000L);
+        }, 120000L);
         assertEquals("Producer not present", 1, bean.getTotalProducerCount());
         assertEquals("Consumer not present", 1, bean.getTotalConsumerCount());
     }
@@ -90,7 +98,9 @@ public class MQProfileTest extends FabricTestSupport {
 
         Provision.provisioningSuccess(Arrays.asList(broker), PROVISION_TIMEOUT);
 
-        final BrokerViewMBean bean = (BrokerViewMBean)Provision.getMBean(broker, new ObjectName("org.apache.activemq:type=Broker,brokerName=mq"), BrokerViewMBean.class, 30000);
+        waitForBroker("default");
+
+        final BrokerViewMBean bean = (BrokerViewMBean)Provision.getMBean(broker, new ObjectName("org.apache.activemq:type=Broker,brokerName=mq"), BrokerViewMBean.class, 120000);
 
         System.err.println(executeCommand("container-list"));
 
@@ -109,14 +119,13 @@ public class MQProfileTest extends FabricTestSupport {
                 }
                 return true;
             }
-        }, 30000L);
+        }, 120000L);
         assertEquals("Producer not present", 1, bean.getTotalProducerCount());
         assertEquals("Consumer not present", 1, bean.getTotalConsumerCount());
     }
 
 
     @Test
-    @Ignore("[FABRIC-674] Fix fabric basic MQProfileTest")
     public void testMQCreateNetwork() throws Exception {
         System.err.println(executeCommand("fabric:create -n"));
 
@@ -138,8 +147,11 @@ public class MQProfileTest extends FabricTestSupport {
 
         Provision.provisioningSuccess(Arrays.asList(westBroker, eastBroker), PROVISION_TIMEOUT);
 
-        final BrokerViewMBean brokerEast = (BrokerViewMBean)Provision.getMBean(eastBroker, new ObjectName("org.apache.activemq:type=Broker,brokerName=us-east"), BrokerViewMBean.class, 30000);
-        final BrokerViewMBean brokerWest = (BrokerViewMBean)Provision.getMBean(westBroker, new ObjectName("org.apache.activemq:type=Broker,brokerName=us-west"), BrokerViewMBean.class, 30000);
+        waitForBroker("us-east");
+        waitForBroker("us-west");
+
+        final BrokerViewMBean brokerEast = (BrokerViewMBean)Provision.getMBean(eastBroker, new ObjectName("org.apache.activemq:type=Broker,brokerName=us-east"), BrokerViewMBean.class, 120000);
+        final BrokerViewMBean brokerWest = (BrokerViewMBean)Provision.getMBean(westBroker, new ObjectName("org.apache.activemq:type=Broker,brokerName=us-west"), BrokerViewMBean.class, 120000);
 
 
         Container eastProducer = containers.iterator().next();
@@ -161,7 +173,7 @@ public class MQProfileTest extends FabricTestSupport {
                 }
                 return true;
             }
-        }, 60000L);
+        }, 120000L);
 
         System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + eastBroker.getId() + " bstat"));
         System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + westBroker.getId() + " bstat"));
@@ -170,6 +182,30 @@ public class MQProfileTest extends FabricTestSupport {
 
         assertFalse("Messages not received", brokerWest.getTotalDequeueCount() == 0);
 
+    }
+
+    protected void waitForBroker(String groupName) throws Exception {
+        CuratorFramework curatorFramework = getCurator();
+        final CountDownLatch serviceLatch = new CountDownLatch(1);
+        final FabricDiscoveryAgent discoveryAgent = new FabricDiscoveryAgent();
+
+        discoveryAgent.setCurator(curatorFramework);
+        discoveryAgent.setGroupName(groupName);
+        discoveryAgent.setDiscoveryListener( new DiscoveryListener() {
+            @Override
+            public void onServiceAdd(DiscoveryEvent discoveryEvent) {
+                System.out.println("Service added:" + discoveryEvent.getServiceName());
+                serviceLatch.countDown();
+            }
+
+            @Override
+            public void onServiceRemove(DiscoveryEvent discoveryEvent) {
+                System.out.println("Service removed:" + discoveryEvent.getServiceName());
+            }
+        });
+
+        discoveryAgent.start();
+        assertTrue(serviceLatch.await(15, TimeUnit.MINUTES));
     }
 
     @Configuration
