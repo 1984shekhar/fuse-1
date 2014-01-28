@@ -14,29 +14,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.fusesource.gateway.fabric.config;
+package org.fusesource.gateway.handlers.http;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 /**
- * The Gateway configuration
  */
-public class GatewaysConfig {
-    private List<GatewayConfig> gateways = new ArrayList<GatewayConfig>();
+public interface HttpMappingRule {
+    /**
+     * Using the mapping rules add all the mapped services to the given map with the URI prefix as the key of the map and
+     * the mapped services as the value
+     */
+    void appendMappedServices(Map<String, MappedServices> uriToServicesMap);
 
-    @Override
-    public String toString() {
-        return "GatewaysConfig{" +
-                "gateways=" + gateways +
-                '}';
-    }
+    void addChangeListener(Runnable listener);
 
-    public List<GatewayConfig> getGateways() {
-        return gateways;
-    }
-
-    public void setGateways(List<GatewayConfig> gateways) {
-        this.gateways = gateways;
-    }
+    void removeChangeListener(Runnable listener);
 }

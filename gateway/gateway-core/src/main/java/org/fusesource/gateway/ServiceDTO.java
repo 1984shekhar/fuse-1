@@ -14,10 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.fusesource.gateway.fabric;
+package org.fusesource.gateway;
 
-import org.codehaus.jackson.annotate.JsonProperty;
-import org.fusesource.gateway.ServiceDetails;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
@@ -25,17 +24,42 @@ import java.util.List;
 /**
  */
 public class ServiceDTO implements ServiceDetails {
-	@JsonProperty
-	private String id;
+    @JsonProperty
+    private String id;
 
-	@JsonProperty
-	private String container;
+    @JsonProperty
+    private String container;
+
+    @JsonProperty
+    private String version;
 
     @JsonProperty
     private List<String> services = Collections.EMPTY_LIST;
 
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getContainer() {
+        return container;
+    }
+
+    public void setContainer(String container) {
+        this.container = container;
+    }
+
+    @Override
+    public String getVersion() {
+        return version;
+    }
+
+    public void setVersion(String version) {
+        this.version = version;
     }
 
     public List<String> getServices() {
@@ -46,18 +70,13 @@ public class ServiceDTO implements ServiceDetails {
         this.services = services;
     }
 
-    public String getContainer() {
-        return container;
-    }
-
-    public void setContainer(String container) {
-        this.container = container;
-    }
-
     @Override
-	public String toString() {
-		return "ServiceDTO{" +
-				"id='" + id + '\'' +
-				", services=" + services + "}";
-	}
+    public String toString() {
+        return "ServiceDTO{" +
+                "id='" + id + '\'' +
+                ", container='" + container + '\'' +
+                ", version='" + version + '\'' +
+                ", services=" + services +
+                '}';
+    }
 }
