@@ -185,8 +185,8 @@
         <jackson-2-annotations-version>2.3.0</jackson-2-annotations-version>
         <jackson-module-scala-version>2.1.5_2</jackson-module-scala-version>
         <jansi-version>1.11</jansi-version>
-        <jasypt-version>1.9.0</jasypt-version>
-        <jasypt-smx-version>1.9.0_1</jasypt-smx-version>
+        <jasypt-version>1.9.1</jasypt-version>
+        <jasypt-smx-version>1.9.1_1</jasypt-smx-version>
         <jaxb-api-version>2.1</jaxb-api-version>
         <jaxb-version>2.1.13</jaxb-version>
         <jclouds-version>1.6.2-incubating</jclouds-version>
@@ -317,7 +317,7 @@
         <jetty6.bundle.version>6.1.26_3</jetty6.bundle.version>
         <jruby.version>1.7.6</jruby.version>
         <josql.bundle.version>1.5_4</josql.bundle.version>
-        <jsmpp.bundle.version>2.1.0_3</jsmpp.bundle.version>
+        <jsmpp.bundle.version>2.1.0_4</jsmpp.bundle.version>
         <opensaml.bundle.version>2.4.1_1</opensaml.bundle.version>
         <jodatime.bundle.version>1.5.2_2</jodatime.bundle.version>
         <oscore.bundle.version>2.2.4_4</oscore.bundle.version>
@@ -333,7 +333,7 @@
         <validation-api-version>1.1.0.Final</validation-api-version>
         <velocity.bundle.version>1.7_3</velocity.bundle.version>
         <wsdl4j.bundle.version>1.6.3_1</wsdl4j.bundle.version>
-        <xalan.bundle.version>2.7.1_4</xalan.bundle.version>
+        <xalan.bundle.version>2.7.1_7</xalan.bundle.version>
         <xerces.bundle.version>2.9.1_4</xerces.bundle.version>
         <xmlbeans.bundle.version>2.5.0_2</xmlbeans.bundle.version>
         <xmlresolver.bundle.version>1.2_5</xmlresolver.bundle.version>
