@@ -315,7 +315,11 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
         boolean destroyed = false;
         try {
             ContainerProvider provider = getProvider(container, true);
-            provider.stop(container);
+            try {
+                provider.stop(container);
+            } catch (Exception ex) {
+                //Ignore error while stopping and try to destroy.
+            }
             provider.destroy(container);
             destroyed = true;
 
