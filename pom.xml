@@ -394,6 +394,7 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
+        <!-- Note: repo.fusesource.com is the correct repo for JBoss Fuse and it is not a mistake -->
         <repository>
             <id>jboss.ea</id>
             <name>JBoss Community Early Access Release Repository</name>
@@ -533,9 +534,10 @@
     </repositories>
 
     <pluginRepositories>
+        <!-- Note: repo.fusesource.com is the correct repo for JBoss Fuse and it is not a mistake -->
         <pluginRepository>
-            <id>fusesource.ea</id>
-            <name>FuseSource Community Early Access Release Repository</name>
+            <id>jboss.ea</id>
+            <name>JBoss Community Early Access Release Repository</name>
             <url>https://repo.fusesource.com/nexus/content/groups/ea</url>
             <snapshots>
                 <enabled>false</enabled>
@@ -588,6 +590,11 @@
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>fabric-utils</artifactId>
+                <version>${fabric.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>fabric8-maven-plugin</artifactId>
                 <version>${fabric.version}</version>
             </dependency>
             <dependency>
@@ -843,6 +850,11 @@
             <dependency>
                 <groupId>io.fabric8</groupId>
                 <artifactId>fabric-partition</artifactId>
+                <version>${fabric.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>io.fabric8</groupId>
+                <artifactId>fabric-project-deployer</artifactId>
                 <version>${fabric.version}</version>
             </dependency>
             <dependency>
@@ -2181,6 +2193,11 @@
             <dependency>
                 <groupId>org.ops4j.pax.url</groupId>
                 <artifactId>pax-url-mvn</artifactId>
+                <version>${pax.url.version}</version>
+            </dependency>
+            <dependency>
+               <groupId>org.ops4j.pax.url</groupId>
+               <artifactId>pax-url-wrap</artifactId>
                 <version>${pax.url.version}</version>
             </dependency>
 
