@@ -16,12 +16,14 @@
  */
 package org.fusesource.mq.itests;
 
-import io.fabric8.api.Container;
 import io.fabric8.api.FabricService;
+import io.fabric8.api.ServiceProxy;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
 
 import java.util.Set;
 
+import io.fabric8.itests.paxexam.support.ContainerProxy;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.junit.ExamReactorStrategy;
 import org.ops4j.pax.exam.junit.JUnit4TestRunner;
@@ -30,13 +32,14 @@ import org.ops4j.pax.exam.spi.reactors.AllConfinedStagedReactorFactory;
 
 @RunWith(JUnit4TestRunner.class)
 @ExamReactorStrategy(AllConfinedStagedReactorFactory.class)
+@Ignore("[FABRIC-933] Cannot create ActiveMQ container in time")
 public class KillSessionFailOverTest extends GracefullFailOverTest {
 
-    Set<Container> setupCluster(String groupName, String brokerName) throws Exception {
+    Set<ContainerProxy> setupCluster(ServiceProxy<FabricService> fabricProxy, String groupName, String brokerName) throws Exception {
         System.out.println(executeCommand("fabric:mq-create --group " + groupName + " " + brokerName));
         String profileName = "mq-broker-"+groupName+"."+brokerName;
         System.out.println(executeCommand("fabric:profile-edit --features fabric-zookeeper-commands " + profileName));
-        return ContainerBuilder.child(2).withName("child").withProfiles(profileName).assertProvisioningResult().build();
+        return ContainerBuilder.child(fabricProxy, 2).withName("child").withProfiles(profileName).assertProvisioningResult().build();
     }
 
 

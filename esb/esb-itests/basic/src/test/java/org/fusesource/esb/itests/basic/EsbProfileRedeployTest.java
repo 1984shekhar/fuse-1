@@ -22,8 +22,11 @@ import static org.ops4j.pax.exam.CoreOptions.scanFeatures;
 import io.fabric8.api.Container;
 import io.fabric8.api.FabricService;
 import io.fabric8.api.ServiceProxy;
-import io.fabric8.groups.internal.ZooKeeperMultiGroup;
+import io.fabric8.groups.MultiGroup;
+import io.fabric8.groups.internal.ManagedGroupFactory;
+import io.fabric8.groups.internal.ManagedGroupFactoryBuilder;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
+import io.fabric8.itests.paxexam.support.ContainerProxy;
 import io.fabric8.itests.paxexam.support.FabricTestSupport;
 import io.fabric8.itests.paxexam.support.Provision;
 
@@ -33,7 +36,6 @@ import java.util.concurrent.Callable;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.fusesource.mq.fabric.FabricDiscoveryAgent;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.ops4j.pax.exam.Option;
@@ -45,27 +47,30 @@ import org.ops4j.pax.exam.spi.reactors.AllConfinedStagedReactorFactory;
 
 @RunWith(JUnit4TestRunner.class)
 @ExamReactorStrategy(AllConfinedStagedReactorFactory.class)
-@Ignore("[FABRIC-796] Fix esb basic EsbProfileRedeployTest")
 public class EsbProfileRedeployTest extends FabricTestSupport {
 
-    private long timeout = 60 * 1000L;
+    private long timeout = 300 * 1000L;
 
     @Test
     public void testProfileRedeploy() throws Exception {
         executeCommand("fabric:create -n");
-
-        Set<Container> containers = ContainerBuilder.create(1).withName("node").withProfiles("jboss-fuse-full").assertProvisioningResult().build();
+        ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
         try {
-            Container node = containers.iterator().next();
-            Provision.provisioningSuccess(Arrays.asList(node), PROVISION_TIMEOUT);
+            FabricService fabricService = fabricProxy.getService();
 
-            ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
-            ServiceProxy<CuratorFramework> curatorProxy = ServiceProxy.createServiceProxy(bundleContext, CuratorFramework.class);
+            Set<ContainerProxy> containers = ContainerBuilder.create(fabricProxy, 1).withJvmOpts("-Xmx512m -XX:MaxPermSize=128m").withName("node").withProfiles("jboss-fuse-full").assertProvisioningResult().build();
             try {
-                FabricService fabricService = fabricProxy.getService();
-                CuratorFramework curator = curatorProxy.getService();
+                Container node = containers.iterator().next();
+                Provision.provisioningSuccess(Arrays.asList(node), PROVISION_TIMEOUT);
 
-                final ZooKeeperMultiGroup group = new ZooKeeperMultiGroup<FabricDiscoveryAgent.ActiveMQNode>(curator, "/fabric/registry/clusters/fusemq/default", FabricDiscoveryAgent.ActiveMQNode.class);
+                CuratorFramework curator = fabricService.adapt(CuratorFramework.class);
+                ManagedGroupFactory factory = ManagedGroupFactoryBuilder.create(curator, getClass().getClassLoader(), new Callable<CuratorFramework>() {
+                    @Override
+                    public CuratorFramework call() throws Exception {
+                        throw new Exception("Shouldn't be called");
+                    }
+                });
+                final MultiGroup group = (MultiGroup) factory.createMultiGroup("/fabric/registry/clusters/fusemq/default", FabricDiscoveryAgent.ActiveMQNode.class);
                 group.start();
                 FabricDiscoveryAgent.ActiveMQNode master = null;
                 Provision.waitForCondition(new Callable<Boolean>() {
@@ -78,7 +83,7 @@ public class EsbProfileRedeployTest extends FabricTestSupport {
                     }
                 }, timeout);
 
-                master = (FabricDiscoveryAgent.ActiveMQNode)group.master();
+                master = (FabricDiscoveryAgent.ActiveMQNode) group.master();
                 String masterContainer = master.getContainer();
                 assertEquals("node1", masterContainer);
 
@@ -122,11 +127,10 @@ public class EsbProfileRedeployTest extends FabricTestSupport {
 
                 }
             } finally {
-                fabricProxy.close();
-                curatorProxy.close();
+                ContainerBuilder.destroy(containers);
             }
         } finally {
-            ContainerBuilder.destroy(containers);
+            fabricProxy.close();
         }
     }
 

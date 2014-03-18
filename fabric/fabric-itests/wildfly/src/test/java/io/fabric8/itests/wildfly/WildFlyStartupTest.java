@@ -17,7 +17,10 @@
 package io.fabric8.itests.wildfly;
 
 import io.fabric8.api.Container;
+import io.fabric8.api.FabricService;
+import io.fabric8.api.ServiceProxy;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
+import io.fabric8.itests.paxexam.support.ContainerProxy;
 import io.fabric8.itests.paxexam.support.Provision;
 import io.fabric8.utils.SystemProperties;
 
@@ -42,15 +45,17 @@ import org.ops4j.pax.exam.spi.reactors.AllConfinedStagedReactorFactory;
 
 @RunWith(JUnit4TestRunner.class)
 @ExamReactorStrategy(AllConfinedStagedReactorFactory.class)
-@Ignore("[FABRIC-574] Fix fabric wildfly WildFlyStartupTest")
+@Ignore("[FABRIC-574][7.4] Fix fabric wildfly WildFlyStartupTest")
 public class WildFlyStartupTest extends WildFlyTestSupport {
 
 	@Test
 	public void testWildFlyProcess() throws Exception {
 
 		executeCommand("fabric:create -n");
-		Set<Container> containers = ContainerBuilder.child(1).withName("child").assertProvisioningResult().build();
-		try {
+        Set<ContainerProxy> containers = null;
+        ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
+        try {
+            containers= ContainerBuilder.child(fabricProxy, 1).withName("child").assertProvisioningResult().build();
 			Container childContainer = containers.iterator().next();
             Assert.assertEquals("Expected to find the child container", "child1", childContainer.getId());
 
@@ -113,6 +118,7 @@ public class WildFlyStartupTest extends WildFlyTestSupport {
 
 		} finally {
 		    ContainerBuilder.destroy(containers);
+            fabricProxy.close();
 		}
 	}
 

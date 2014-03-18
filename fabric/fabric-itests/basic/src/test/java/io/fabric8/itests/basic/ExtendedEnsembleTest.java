@@ -22,6 +22,7 @@ import io.fabric8.api.ServiceLocator;
 import io.fabric8.api.ServiceProxy;
 import io.fabric8.api.ZooKeeperClusterService;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
+import io.fabric8.itests.paxexam.support.ContainerProxy;
 import io.fabric8.itests.paxexam.support.FabricEnsembleTest;
 import io.fabric8.itests.paxexam.support.Provision;
 
@@ -54,7 +55,7 @@ public class ExtendedEnsembleTest extends FabricEnsembleTest {
             System.err.println(executeCommand("fabric:version-create --parent 1.0 1.1"));
             System.err.println(executeCommand("fabric:container-upgrade --all 1.1"));
 
-            Set<Container> containers = ContainerBuilder.create(2).withName("ens").withProfiles("default").assertProvisioningResult().build();
+            Set<Container> containers = ContainerBuilder.create(fabricProxy, 2).withName("ens").withProfiles("default").assertProvisioningResult().build();
             try {
                 Deque<Container> containerQueue = new LinkedList<Container>(containers);
                 Deque<Container> addedContainers = new LinkedList<Container>();
@@ -121,7 +122,7 @@ public class ExtendedEnsembleTest extends FabricEnsembleTest {
             System.err.println(executeCommand("fabric:version-create"));
             System.err.println(executeCommand("fabric:container-upgrade --all 1.1"));
 
-            Set containers = ContainerBuilder.create(2).withName("ens").withProfiles("fabric").assertProvisioningResult().build();
+            Set<ContainerProxy> containers = ContainerBuilder.create(fabricProxy, 2).withName("ens").withProfiles("fabric").assertProvisioningResult().build();
             try {
                 LinkedList<Container> containerQueue = new LinkedList<Container>(containers);
                 LinkedList<Container> addedContainers = new LinkedList<Container>();

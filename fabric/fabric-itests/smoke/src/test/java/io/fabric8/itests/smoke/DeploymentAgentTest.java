@@ -5,7 +5,10 @@ import static org.apache.karaf.tooling.exam.options.KarafDistributionOption.edit
 import java.util.Set;
 
 import io.fabric8.api.Container;
+import io.fabric8.api.FabricService;
+import io.fabric8.api.ServiceProxy;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
+import io.fabric8.itests.paxexam.support.ContainerProxy;
 import io.fabric8.itests.paxexam.support.FabricTestSupport;
 import io.fabric8.itests.paxexam.support.Provision;
 import org.junit.After;
@@ -46,23 +49,28 @@ public class DeploymentAgentTest extends FabricTestSupport {
 		System.out.println(executeCommand("profile-edit --pid io.fabric8.agent/org.ops4j.pax.url.mvn.repositories=http://repo1.maven.org/maven2@id=m2central default 1.1"));
 		System.out.println(executeCommand("fabric:profile-edit --pid test-profile 1.1"));
 
-        Set<Container> containers = ContainerBuilder.create().withName("cnt").withProfiles("test-profile").assertProvisioningResult().build();
-		try {
-	        //We want to remove all repositories from fabric-agent.
-	        for (Container container : containers) {
-	            System.out.println(executeCommand("fabric:container-upgrade 1.1 " + container.getId()));
-	            System.out.flush();
-	        }
-	        Provision.provisioningSuccess(containers, PROVISION_TIMEOUT);
-	        System.out.println(executeCommand("fabric:container-list"));
+        ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
+        try {
+            Set<ContainerProxy> containers = ContainerBuilder.create(fabricProxy).withName("cnt").withProfiles("test-profile").assertProvisioningResult().build();
+            try {
+                //We want to remove all repositories from fabric-agent.
+                for (Container container : containers) {
+                    System.out.println(executeCommand("fabric:container-upgrade 1.1 " + container.getId()));
+                    System.out.flush();
+                }
+                Provision.provisioningSuccess(containers, PROVISION_TIMEOUT);
+                System.out.println(executeCommand("fabric:container-list"));
 
-	        for (Container container : containers) {
-	            System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + container.getId() + " osgi:list"));
-	            System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + container.getId() + " config:proplist --pid org.ops4j.pax.url.mvn"));
-	            System.out.flush();
-	        }
+                for (Container container : containers) {
+                    System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + container.getId() + " osgi:list"));
+                    System.out.println(executeCommand("fabric:container-connect -u admin -p admin " + container.getId() + " config:proplist --pid org.ops4j.pax.url.mvn"));
+                    System.out.flush();
+                }
+            } finally {
+                ContainerBuilder.destroy(containers);
+            }
 		} finally {
-            ContainerBuilder.destroy(containers);
+            fabricProxy.close();
 		}
 	}
 

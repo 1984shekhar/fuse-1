@@ -16,10 +16,10 @@
  */
 package org.fusesource.esb.itests.basic.fabric;
 
-import io.fabric8.api.Container;
 import io.fabric8.api.FabricService;
 import io.fabric8.api.ServiceProxy;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
+import io.fabric8.itests.paxexam.support.ContainerProxy;
 
 import java.util.Set;
 
@@ -37,14 +37,13 @@ public class EsbProfileLongTest extends EsbFeatureTest {
     @Test
     public void testFeatures() throws Exception {
         System.err.println(executeCommand("fabric:create -n"));
-        Set<Container> containers = ContainerBuilder.create().withName("esb").withProfiles("jboss-fuse-minimal").assertProvisioningResult().build();
+        ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
         try {
-            ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
-            ServiceProxy<CuratorFramework> curatorProxy = ServiceProxy.createServiceProxy(bundleContext, CuratorFramework.class);
-            try {
-                FabricService fabricService = fabricProxy.getService();
-                CuratorFramework curator = curatorProxy.getService();
+            FabricService fabricService = fabricProxy.getService();
+            CuratorFramework curator = fabricService.adapt(CuratorFramework.class);
 
+            Set<ContainerProxy> containers = ContainerBuilder.create(fabricProxy).withName("esb").withProfiles("jboss-fuse-minimal").assertProvisioningResult().build();
+            try {
                 prepareFeaturesForTesting(containers, "connector", "jboss-fuse-minimal", "geronimo-connector");
                 prepareFeaturesForTesting(containers, "saaj", "jboss-fuse-minimal", "saaj-impl");
                 prepareFeaturesForTesting(containers, "cxf-nmr", "jboss-fuse-minimal", "org.apache.servicemix.cxf.binding.nmr");
@@ -77,11 +76,10 @@ public class EsbProfileLongTest extends EsbFeatureTest {
 
                 assertFeatures(fabricService, curator);
             } finally {
-                fabricProxy.close();
-                curatorProxy.close();
+                ContainerBuilder.destroy(containers);
             }
         } finally {
-            ContainerBuilder.destroy(containers);
+            fabricProxy.close();
         }
     }
 }
