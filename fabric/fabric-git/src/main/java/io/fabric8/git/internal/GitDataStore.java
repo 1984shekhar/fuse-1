@@ -1399,7 +1399,6 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
                     @Override
                     public void run() {
                         if (isValid()) {
-                            LOG.info("Performing on remote url changed from: {} to: {}", updatedUrl, actualUrl);
                             gitOperation(new GitOperation<Void>() {
                                 @Override
                                 public Void call(Git git, GitContext context) throws Exception {
@@ -1407,6 +1406,7 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
                                     StoredConfig config = repository.getConfig();
                                     String currentUrl = config.getString("remote", "origin", "url");
                                     if (actualUrl != null && !actualUrl.equals(currentUrl)) {
+                                        LOG.info("Performing on remote url changed from: {} to: {}", currentUrl, actualUrl);
                                             remoteUrl = actualUrl;
                                         config.setString("remote", "origin", "url", actualUrl);
                                         config.setString("remote", "origin", "fetch", "+refs/heads/*:refs/remotes/origin/*");
