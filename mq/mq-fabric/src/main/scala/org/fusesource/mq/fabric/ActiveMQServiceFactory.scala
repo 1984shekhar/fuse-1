@@ -266,7 +266,6 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
             discoveryAgent.setGroupName(group)
             discoveryAgent.setCurator(curator)
             if (replicating) {
-              discoveryAgent.start()
               if (started.compareAndSet(false, true)) {
                 info("Replicating broker %s is starting.", name)
                 start()
@@ -431,6 +430,11 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
             }
           }
         })
+
+        // we only register once broker startup has completed.
+        if( replicating ) {
+          discoveryAgent.start()
+        }
 
         // Update the advertised endpoint URIs that clients can use.
         if (!standalone || replicating) {
