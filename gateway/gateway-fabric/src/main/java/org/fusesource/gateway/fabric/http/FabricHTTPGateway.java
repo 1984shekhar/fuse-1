@@ -173,11 +173,11 @@ public final class FabricHTTPGateway extends AbstractComponent implements HttpGa
         this.vertxService.unbind(vertxService);
     }
 
-    void bindCuratorFramework(CuratorFramework curator) {
+    void bindCurator(CuratorFramework curator) {
         this.curator.bind(curator);
     }
 
-    void unbindCuratorFramework(CuratorFramework curator) {
+    void unbindCurator(CuratorFramework curator) {
         this.curator.unbind(curator);
     }
 
