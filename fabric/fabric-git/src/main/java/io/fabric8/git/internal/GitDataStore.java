@@ -276,6 +276,8 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
         }
     }
 
+    private static final int MAX_COMMITS_WITHOUT_GC = 40;
+    private int commitsWithoutGC = MAX_COMMITS_WITHOUT_GC;
 
     public void importFromFileSystem(final File from, final String destinationPath, final String version, final boolean isProfileDir) {
         assertValid();
@@ -913,6 +915,11 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
                         LOG.warn("No commit message from " + operation + ". Please add one! :)");
                     }
                     git.commit().setMessage(message).call();
+                    if (--commitsWithoutGC < 0) {
+                        commitsWithoutGC = MAX_COMMITS_WITHOUT_GC;
+                        LOG.debug("Performing \"git gc\" after {} commits", MAX_COMMITS_WITHOUT_GC);
+                        git.gc().call();
+                    }
                 }
 
                 if (requirePush) {
