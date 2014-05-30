@@ -347,6 +347,10 @@ public class CreateEnsembleOptions extends ContainerOptions {
             this.zooKeeperServerPort = zooKeeperServerPort;
         }
 
+        public void setZooKeeperServerConnectionPort(int zooKeeperServerConnectionPort) {
+            this.zooKeeperServerConnectionPort = zooKeeperServerConnectionPort;
+        }
+
         public void setZookeeperPassword(String zookeeperPassword) {
             this.zookeeperPassword = zookeeperPassword;
         }

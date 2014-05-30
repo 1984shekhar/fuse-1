@@ -61,6 +61,22 @@ public class CreateChildContainerTest extends FabricTestSupport {
         }
     }
 
+    @Test
+    public void testCreateChildContainerWithCustomZKServerPort() throws Exception {
+        System.err.println(executeCommand("fabric:create --clean -n --zookeeper-server-port 2345"));
+        System.err.println(executeCommand("fabric:profile-create --parents default p1"));
+        System.err.println(executeCommand("fabric:profile-edit --features fabric-zookeeper-commands p1"));
+        ServiceProxy<FabricService> fabricProxy = ServiceProxy.createServiceProxy(bundleContext, FabricService.class);
+        Set<ContainerProxy> containers = ContainerBuilder.child(fabricProxy, 1).withName("child").withProfiles("p1").assertProvisioningResult().build();
+        try {
+            Container child = containers.iterator().next();
+            String ensembleUrl = executeCommand("fabric:container-connect -u admin -p admin " + child.getId() + " zk:get /fabric/configs/ensemble/url");
+            Assert.assertTrue("Child should use custom ZK server port", ensembleUrl.contains("${zk:root/ip}:2345"));
+        } finally {
+            ContainerBuilder.destroy(containers);
+        }
+    }
+
     /**
      * [FABRIC-822] Cannot create child container repeatedly
      */
