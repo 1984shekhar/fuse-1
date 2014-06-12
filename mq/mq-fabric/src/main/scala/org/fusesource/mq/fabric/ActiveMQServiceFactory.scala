@@ -440,13 +440,15 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
           def run():Unit = {
             // Start up the server again if it shutdown.  Perhaps
             // it has lost a Locker and wants a restart.
-            if (started.get && server != null && server._2.isRestartAllowed && server._2.isRestartRequested) {
-              info("Restarting broker '%s' after shutdown on restart request", name)
-              discoveryAgent.setServices(Array[String]())
-              start()
-            } else {
-              info("Broker '%s' shut down, giving up being master", name)
-              updateCurator(curator)
+            if (started.get && server != null) {
+              if (server._2.isRestartAllowed && server._2.isRestartRequested) {
+                info("Restarting broker '%s' after shutdown on restart request", name)
+                discoveryAgent.setServices(Array[String]())
+                start()
+              } else {
+                info("Broker '%s' shut down, giving up being master", name)
+                updateCurator(curator)
+              }
             }
           }
         })
