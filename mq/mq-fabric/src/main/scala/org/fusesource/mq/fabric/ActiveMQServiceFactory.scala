@@ -49,6 +49,7 @@ import org.apache.xbean.classloader.MultiParentClassLoader
 import org.osgi.util.tracker.{ServiceTrackerCustomizer, ServiceTracker}
 import org.osgi.service.url.URLStreamHandlerService
 import java.util.concurrent.{Future, Executors}
+import scala.util.control.Breaks._
 
 object ActiveMQServiceFactory {
   final val LOG= LoggerFactory.getLogger(classOf[ActiveMQServiceFactory])
@@ -344,7 +345,9 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
           stop()
         }
       }
-      waitForStop()
+      if (started.get) {
+        waitForStop()
+      }
       executor.shutdownNow()
     }
 
@@ -380,6 +383,8 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
                     Thread.sleep(1000 * 10)
                   } catch {
                     case ignore: InterruptedException =>
+                      info("Interrupted while starting")
+                      break;
                   }
               }
             }
@@ -389,8 +394,8 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
     }
 
     def stop() = this.synchronized {
+      interruptAndWaitForStart()
       if (stop_future == null || stop_future.isDone) {
-        interruptAndWaitForStart()
         stop_future = executor.submit(new Runnable() {
           override def run() {
             doStop()
