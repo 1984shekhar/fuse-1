@@ -341,11 +341,11 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
         if( discoveryAgent!=null ) {
           discoveryAgent.stop()
         }
-        if(started.compareAndSet(true, false)) {
+        if(started.get()) {
           stop()
         }
       }
-      if (started.get) {
+      if (started.compareAndSet(true, false)) {
         waitForStop()
       }
       executor.shutdownNow()
