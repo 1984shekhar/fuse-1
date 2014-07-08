@@ -377,13 +377,17 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
                 started = true
               } catch {
                 case e: Throwable =>
+                  if (start_future.isCancelled || Thread.currentThread().isInterrupted) {
+                    info("Broker %s interrupted while starting", name)
+                    break;
+                  }
                   info("Broker %s failed to start.  Will try again in 10 seconds", name)
                   LOG.error("Exception on start: " + e, e)
                   try {
                     Thread.sleep(1000 * 10)
                   } catch {
                     case ignore: InterruptedException =>
-                      info("Interrupted while starting")
+                      info("Broker %s interrupted while starting", name)
                       break;
                   }
               }
