@@ -92,6 +92,7 @@
         <fuse.osgi.symbolic.name>${project.groupId}.${project.artifactId}</fuse.osgi.symbolic.name>
         <fuse.osgi.exclude.dependencies>false</fuse.osgi.exclude.dependencies>
         <fuse.osgi.resource>{maven-resources}</fuse.osgi.resource>
+        <fuse.osgi.services.import />
         <fuse.osgi.services.export />
         <fuse.osgi.embed.dependency>!*</fuse.osgi.embed.dependency>
         <fuse.osgi.embed.transitive>false</fuse.osgi.embed.transitive>

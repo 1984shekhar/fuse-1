@@ -80,6 +80,7 @@
                             <Include-Resource>${fuse.osgi.resource}</Include-Resource>
                             <_versionpolicy>${fuse.osgi.import.default.version}</_versionpolicy>
                             <_failok>${fuse.osgi.failok}</_failok>
+                            <Import-Service>${fuse.osgi.services.import}</Import-Service>
                             <Export-Service>${fuse.osgi.services.export}</Export-Service>
                             <Embed-Dependency>${fuse.osgi.embed.dependency}</Embed-Dependency>
                             <Embed-Transitive>${fuse.osgi.embed.transitive}</Embed-Transitive>
