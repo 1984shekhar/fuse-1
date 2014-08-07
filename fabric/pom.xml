@@ -71,6 +71,7 @@
         <module>fabric-partition</module>
         <module>fabric-project-deployer</module>
         <module>fabric-redirect</module>
+        <module>fabric-ssl</module>
         <module>fabric-utils</module>
         <module>fabric-web</module>
         <module>fabric-zeroconf</module>
