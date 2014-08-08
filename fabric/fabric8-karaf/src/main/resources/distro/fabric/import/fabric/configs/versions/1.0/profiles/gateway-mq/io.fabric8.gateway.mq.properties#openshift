@@ -1,0 +1,2 @@
+# configures the MQ gateway
+host = ${container:bindaddress}

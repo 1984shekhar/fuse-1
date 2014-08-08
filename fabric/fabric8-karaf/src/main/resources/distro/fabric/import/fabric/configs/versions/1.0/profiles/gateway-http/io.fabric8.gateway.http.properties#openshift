@@ -1,0 +1,4 @@
+# configures the http gateway
+
+port = 9000
+host = ${container:bindaddress}

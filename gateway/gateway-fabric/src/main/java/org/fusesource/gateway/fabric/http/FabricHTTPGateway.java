@@ -104,6 +104,7 @@ public final class FabricHTTPGateway extends AbstractComponent implements HttpGa
         Vertx vertx = getVertx();
         handler = new HttpGatewayHandler(vertx, this);
         server = new HttpGatewayServer(vertx, handler, port);
+        server.setHost(host);
         server.init();
     }
 
