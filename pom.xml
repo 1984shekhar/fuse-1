@@ -266,7 +266,7 @@
         <vertx-version>2.0.2-final</vertx-version>
         <wagon-webdav-plugin-version>1.0-beta-7</wagon-webdav-plugin-version>
         <wildfly-version>8.0.0.Beta1</wildfly-version>
-        <xalan.version>2.7.1</xalan.version>
+        <xalan.version>2.7.2</xalan.version>
         <xbean-version>3.15</xbean-version>
         <xerces.version>2.11.0</xerces.version>
         <xjc-version>2.1.10.1</xjc-version>
@@ -335,7 +335,7 @@
         <validation-api-version>1.1.0.Final</validation-api-version>
         <velocity.bundle.version>1.7_3</velocity.bundle.version>
         <wsdl4j.bundle.version>1.6.3_1</wsdl4j.bundle.version>
-        <xalan.bundle.version>2.7.1_7</xalan.bundle.version>
+        <xalan.bundle.version>2.7.2_1</xalan.bundle.version>
         <xerces.bundle.version>2.9.1_4</xerces.bundle.version>
         <xmlbeans.bundle.version>2.5.0_2</xmlbeans.bundle.version>
         <xmlresolver.bundle.version>1.2_5</xmlresolver.bundle.version>
