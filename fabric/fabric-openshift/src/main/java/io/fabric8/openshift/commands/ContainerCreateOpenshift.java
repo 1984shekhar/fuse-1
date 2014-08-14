@@ -47,6 +47,7 @@ public class ContainerCreateOpenshift extends ContainerCreateSupport {
                 .login(login)
                 .password(password)
                 .version(version)
+                .resolver("publichostname")
                 .ensembleServer(isEnsembleServer)
                 .zookeeperUrl(fabricService.getZookeeperUrl())
                 .zookeeperPassword(isEnsembleServer && zookeeperPassword != null ? zookeeperPassword : fabricService.getZookeeperPassword())
