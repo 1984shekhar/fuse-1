@@ -100,6 +100,12 @@ final class JoinAction extends AbstractAction {
     @Override
     protected Object doExecute() throws Exception {
         String oldName = runtimeProperties.getProperty(SystemProperties.KARAF_NAME);
+
+        if( System.getenv("OPENSHIFT_BROKER_HOST")!=null &&  containerName!=null ) {
+            System.err.println("Containers in OpenShift cannot be renamed");
+            return null;
+        }
+
         if (containerName == null) {
             containerName = oldName;
         }
