@@ -29,14 +29,6 @@
         <property name="searchSystemEnvironment" value="true"/>
     </bean>
 
-    <bean id="addressPolicy" class="org.apache.activemq.broker.PublishedAddressPolicy">
-        <property name="portMapping">
-          <map>
-            <entry key="${OPENSHIFT_FUSE_AMQ_PORT}" value="${OPENSHIFT_FUSE_AMQ_PROXY_PORT}"/>
-          </map>
-        </property>
-    </bean>
-
     <broker xmlns="http://activemq.apache.org/schema/core" brokerName="${broker-name}" dataDirectory="${data}" start="false">
 
         <destinationPolicy>
@@ -79,9 +71,49 @@
             </systemUsage>
         </systemUsage>
 
+
+        <sslContext>
+            <sslContext
+                keyStore="${keystore.url}"
+                keyStorePassword="${zookeeper.password}"
+                trustStore="${keystore.url}"
+                trustStorePassword="${zookeeper.password}"
+                />
+        </sslContext>
+
         <transportConnectors>
-            <transportConnector name="openwire" publishedAddressPolicy="#addressPolicy" uri="tcp://${OPENSHIFT_FUSE_IP}:${OPENSHIFT_FUSE_AMQ_PORT}"/>
+            <transportConnector name="openwire"     publishedAddressPolicy="#addressPolicy"   
+                                uri="tcp://${bind.address}:${OPENSHIFT_FUSE_OPENWIRE_PORT}"/>
+            <transportConnector name="mqtt"         publishedAddressPolicy="#addressPolicy"   
+                                uri="mqtt://${bind.address}:${OPENSHIFT_FUSE_MQTT_PORT}"/>
+            <transportConnector name="amqp"         publishedAddressPolicy="#addressPolicy"   
+                                uri="amqp://${bind.address}:${OPENSHIFT_FUSE_AMQP_PORT}"/>
+            <transportConnector name="stomp"        publishedAddressPolicy="#addressPolicy"   
+                                uri="stomp://${bind.address}:${OPENSHIFT_FUSE_STOMP_PORT}"/>
+            <transportConnector name="openwire-ssl" publishedAddressPolicy="#addressPolicy"   
+                                uri="ssl://${bind.address}:${OPENSHIFT_FUSE_OPENWIRE_SSL_PORT}"/>
+            <transportConnector name="mqtt-ssl"     publishedAddressPolicy="#addressPolicy"   
+                                uri="mqtt+ssl://${bind.address}:${OPENSHIFT_FUSE_MQTT_SSL_PORT}"/>
+            <transportConnector name="amqp-ssl"     publishedAddressPolicy="#addressPolicy"   
+                                uri="amqp+ssl://${bind.address}:${OPENSHIFT_FUSE_AMQP_SSL_PORT}"/>
+            <transportConnector name="stomp-ssl"    publishedAddressPolicy="#addressPolicy"   
+                                uri="stomp+ssl://${bind.address}:${OPENSHIFT_FUSE_STOMP_SSL_PORT}"/>
         </transportConnectors>
+        
     </broker>
 
+    <bean id="addressPolicy" class="org.apache.activemq.broker.PublishedAddressPolicy">
+        <property name="portMapping">
+          <map>
+            <entry key="${OPENSHIFT_FUSE_OPENWIRE_PORT}" value="${OPENSHIFT_FUSE_OPENWIRE_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_MQTT_PORT}" value="${OPENSHIFT_FUSE_MQTT_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_AMQP_PORT}" value="${OPENSHIFT_FUSE_AMQP_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_STOMP_PORT}" value="${OPENSHIFT_FUSE_STOMP_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_OPENWIRE_SSL_PORT}" value="${OPENSHIFT_FUSE_OPENWIRE_SSL_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_MQTT_SSL_PORT}" value="${OPENSHIFT_FUSE_MQTT_SSL_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_AMQP_SSL_PORT}" value="${OPENSHIFT_FUSE_AMQP_SSL_PROXY_PORT}"/>
+            <entry key="${OPENSHIFT_FUSE_STOMP_SSL_PORT}" value="${OPENSHIFT_FUSE_STOMP_SSL_PROXY_PORT}"/>
+          </map>
+        </property>
+    </bean>
 </beans>
