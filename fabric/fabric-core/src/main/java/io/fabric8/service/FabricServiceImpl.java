@@ -340,26 +340,37 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
     public void destroyContainer(Container container, boolean force) {
         assertValid();
         String containerId = container.getId();
+        Exception providerException = null;
         LOGGER.info("Destroying container {}", containerId);
         boolean destroyed = false;
         try {
             ContainerProvider provider = getProvider(container, true);
-            try {
-                provider.stop(container);
-            } catch (Exception ex) {
-                //Ignore error while stopping and try to destroy.
+            if (provider != null) {
+                try {
+                    provider.stop(container);
+                } catch (Exception ex) {
+                    providerException = ex;
+                    //Ignore error while stopping and try to destroy.
+                }
+                provider.destroy(container);
+                destroyed = true;
+            } else if (!force) {
+                throw new FabricException("Container's lifecycle not managed by Fabric8 (the container was not created by Fabric8). To cleanup registry, use --force option.");
             }
-            provider.destroy(container);
-            destroyed = true;
-
         } finally {
             try {
                 if (destroyed || force) {
+                    if (!destroyed) {
+                        LOGGER.info("Cleaning up container not created by fabric. The container was created using fabric:join. Ensure that the container isn't running.");
+                    }
                     portService.get().unregisterPort(container);
                     getDataStore().deleteContainer(container.getId());
                 }
             } catch (Exception e) {
                 LOGGER.warn("Failed to cleanup container {} entries due to: {}. This will be ignored.", containerId, e.getMessage());
+            }
+            if (providerException != null) {
+                throw FabricException.launderThrowable(providerException);
             }
         }
     }
