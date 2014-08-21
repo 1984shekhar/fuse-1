@@ -354,13 +354,15 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
                 }
                 provider.destroy(container);
                 destroyed = true;
-            } else {
-                throw new FabricException("Container's lifecycle not managed by Fabric8 (the container was not created by Fabric8).");
+            } else if (!force) {
+                throw new FabricException("Container's lifecycle not managed by Fabric8 (the container was not created by Fabric8). To cleanup registry, use --force option.");
             }
-
         } finally {
             try {
                 if (destroyed || force) {
+                    if (!destroyed) {
+                        LOGGER.info("Cleaning up container not created by fabric. The container was created using fabric:join. Ensure that the container isn't running.");
+                    }
                     portService.get().unregisterPort(container);
                     getDataStore().deleteContainer(container.getId());
                 }
