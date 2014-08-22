@@ -35,6 +35,9 @@ public class SoapTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(SoapTest.class);
 
+    public static final String PORT = System.getProperty("fuse.port", "8181");
+    public static final String HOST = System.getProperty("fuse.host", "localhost");
+
     /**
      * Helper method to copy bytes from an InputStream to an OutputStream.
      */
@@ -66,7 +69,7 @@ public class SoapTest {
         /*
          * Set up the URL connection to the web service address
          */
-        URLConnection connection = new URL("http://localhost:8181/cxf/HelloWorld").openConnection();
+        URLConnection connection = new URL("http://"+HOST+":"+PORT+"/cxf/HelloWorld").openConnection();
         connection.setDoInput(true);
         connection.setDoOutput(true);
 

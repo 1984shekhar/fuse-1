@@ -35,6 +35,8 @@ public class SecureSoapTest {
 
     private static final Logger LOG = LoggerFactory.getLogger(SecureSoapTest.class);
 
+    public static final String PORT = System.getProperty("fuse.port", "8181");
+    public static final String HOST = System.getProperty("fuse.host", "localhost");
 
     public static void main(String[] args) {
         try {
@@ -53,7 +55,7 @@ public class SecureSoapTest {
          */
         JaxWsProxyFactoryBean factory = new JaxWsProxyFactoryBean();
         factory.setServiceClass(HelloWorld.class);
-        factory.setAddress("http://localhost:8181/cxf/HelloWorldSecurity");
+        factory.setAddress("http://"+HOST+":"+PORT+"/cxf/HelloWorldSecurity");
 
         /*
          * Obtain a proxy, implementing the service interface, to access the remote interface.

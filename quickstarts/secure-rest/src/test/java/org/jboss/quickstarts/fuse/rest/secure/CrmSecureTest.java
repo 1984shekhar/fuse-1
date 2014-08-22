@@ -44,10 +44,13 @@ import java.net.URL;
  */
 public final class CrmSecureTest {
 
-    public static final String CUSTOMER_TEST_URL = "http://localhost:8181/cxf/securecrm/customerservice/customers/123";
+    public static final String PORT = System.getProperty("fuse.port", "8181");
+    public static final String HOST = System.getProperty("fuse.host", "localhost");
+
+    public static final String CUSTOMER_TEST_URL = "http://"+HOST+":"+PORT+"/cxf/securecrm/customerservice/customers/123";
     public static final String PRODUCT_ORDER_TEST_URL =
-            "http://localhost:8181/cxf/securecrm/customerservice/orders/223/products/323";
-    public static final String CUSTOMER_SERVICE_URL = "http://localhost:8181/cxf/securecrm/customerservice/customers";
+            "http://"+HOST+":"+PORT+"/cxf/securecrm/customerservice/orders/223/products/323";
+    public static final String CUSTOMER_SERVICE_URL = "http://"+HOST+":"+PORT+"/cxf/securecrm/customerservice/customers";
     private static final Logger LOG = LoggerFactory.getLogger(CrmSecureTest.class);
     private URL url;
     private InputStream in;

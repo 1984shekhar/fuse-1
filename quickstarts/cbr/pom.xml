@@ -181,4 +181,28 @@
                 -->
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>fuse-server</id>
+            <activation>
+              <property>
+                <name>fuse-server</name>
+              </property>
+            </activation>
+            <distributionManagement>
+               <repository>
+                 <id>fuse-server-releaes</id>
+                 <name>fuse-server maven repo</name>
+                 <url>${fuse-server}/maven/upload/</url>
+               </repository>
+              <snapshotRepository>
+                  <id>fuse-server-snapshots</id>
+                  <name>fuse-server maven repo</name>
+                  <url>${fuse-server}/maven/upload/</url>
+               </snapshotRepository>
+            </distributionManagement>    
+        </profile>
+    </profiles>
+
 </project>
