@@ -162,7 +162,9 @@
                             org.apache.ws.security.processor,
                             org.apache.cxf.interceptor.security,
                             org.apache.cxf.transport.http,
-                            org.apache.cxf, org.apache.cxf.endpoint, org.apache.cxf.frontend, org.apache.cxf.interceptor, org.apache.cxf.jaxws, org.apache.cxf.message, org.apache.cxf.phase
+                            org.apache.cxf, org.apache.cxf.endpoint, org.apache.cxf.frontend, org.apache.cxf.interceptor, org.apache.cxf.jaxws, org.apache.cxf.message, org.apache.cxf.phase,
+                            org.apache.karaf.jaas.boot.principal,
+                            org.eclipse.jetty.plus.jaas
                         </Import-Package>
                         <Export-Package>org.jboss.quickstarts.fuse.soap.secure</Export-Package>
                     </instructions>
