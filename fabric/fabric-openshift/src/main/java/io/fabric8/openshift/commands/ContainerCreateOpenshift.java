@@ -1,5 +1,6 @@
 package io.fabric8.openshift.commands;
 
+import io.fabric8.utils.Strings;
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.Option;
@@ -38,11 +39,24 @@ public class ContainerCreateOpenshift extends ContainerCreateSupport {
     @Argument(index = 1, required = false, description = "The number of containers that should be created")
     protected int number = 0;
 
+    private static final String OPENSHIFT_USER = "OPENSHIFT_USER";
+    private static final String OPENSHIFT_USER_PASSWORD = "OPENSHIFT_USER_PASSWORD";
+
     @Override
     protected Object doExecute() throws Exception {
         // validate input before creating containers
         preCreateContainer(name);
         validateProfileName(profiles);
+
+        if (session != null) {
+            if (Strings.isNullOrBlank(login)) {
+                login = (String) session.get(OPENSHIFT_USER);
+            }
+
+            if (Strings.isNullOrBlank(password)) {
+                password = (String) session.get(OPENSHIFT_USER_PASSWORD);
+            }
+        }
 
         CreateOpenshiftContainerOptions.Builder builder = CreateOpenshiftContainerOptions.builder()
                 .name(name)
@@ -68,12 +82,17 @@ public class ContainerCreateOpenshift extends ContainerCreateSupport {
 
         if (isEnsembleServer && metadatas != null && metadatas.length > 0 && metadatas[0].isSuccess()) {
             ShellUtils.storeZookeeperPassword(session, metadatas[0].getCreateOptions().getZookeeperPassword());
+            if (session != null) {
+                // store OpenShift credentials too
+                session.put(OPENSHIFT_USER, login);
+                session.put(OPENSHIFT_USER_PASSWORD, password);
+            }
         }
+
         // display containers
         displayContainers(metadatas);
         return null;
     }
-
 
     @Override
     protected void preCreateContainer(String name) {
