@@ -37,6 +37,12 @@ public class ContainerDelete extends ContainerLifecycleCommand {
             return null;
         }
 
+        String runtimeIdentity = fabricService.getCurrentContainerName();
+        if (container.equals(runtimeIdentity) && !force) {
+            System.out.println("You shouldn't delete current container. If you still want to delete it, please use --force option.");
+            return null;
+        }
+
         Container found = getContainer(container);
         applyUpdatedCredentials(found);
         if (recursive || force) {
