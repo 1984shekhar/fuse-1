@@ -50,7 +50,6 @@ public interface ContainerProvider<O extends CreateContainerOptions, M extends C
      */
     void destroy(Container container);
 
-
     String getScheme();
 
     /**
@@ -60,9 +59,17 @@ public interface ContainerProvider<O extends CreateContainerOptions, M extends C
     Class<O> getOptionsType();
     Class<M> getMetadataType();
 
-
     /**
      * Helper method to create a new builder object
      */
     CreateContainerBasicOptions.Builder newBuilder();
+
+    /**
+     * <p>Tells if this provider is valid in current environment.</p>
+     * <p>It provides better explanation than plain "provider not found"</p>
+     *
+     * @return Whether this provider is valid in current environment.
+     */
+    boolean isValidProvider();
+
 }

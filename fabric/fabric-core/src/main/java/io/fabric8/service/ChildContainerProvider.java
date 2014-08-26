@@ -27,6 +27,7 @@ import java.util.Set;
 import io.fabric8.api.ContainerAutoScaler;
 import io.fabric8.api.ContainerAutoScalerFactory;
 import io.fabric8.utils.PasswordEncoder;
+import io.fabric8.utils.Strings;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
@@ -250,6 +251,14 @@ public final class ChildContainerProvider extends AbstractComponent implements C
     @Override
     public Class<CreateChildContainerMetadata> getMetadataType() {
         return CreateChildContainerMetadata.class;
+    }
+
+    @Override
+    public boolean isValidProvider() {
+        // child provider isn't valid in OpenShift environment
+        boolean openshiftFuseEnv = Strings.notEmpty(System.getenv("OPENSHIFT_FUSE_DIR"));
+        boolean openshiftAmqEnv = Strings.notEmpty(System.getenv("OPENSHIFT_AMQ_DIR"));
+        return !(openshiftFuseEnv || openshiftAmqEnv);
     }
 
     @Override
