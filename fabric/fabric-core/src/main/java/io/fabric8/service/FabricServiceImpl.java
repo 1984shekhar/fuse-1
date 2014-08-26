@@ -445,6 +445,7 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
                 } else {
                     containerName = originalName;
                 }
+                final String containerNameFinal = containerName;
                 optionsMap.put("name", containerName);
 
                 //Check if datastore configuration has been specified and fallback to current container settings.
@@ -479,6 +480,7 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
                             metadatas.add(metadata);
                         } catch (Throwable t) {
                             CreateContainerBasicMetadata metadata = new CreateContainerBasicMetadata();
+                            metadata.setContainerName(containerNameFinal);
                             metadata.setCreateOptions(containerOptions);
                             metadata.setFailure(t);
                             metadatas.add(metadata);
