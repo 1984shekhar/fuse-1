@@ -25,7 +25,7 @@ bindaddress = ${container:bindaddress}
 For accessing an environment variable.
 
 ```
-bindPort=${env:OPENSHIFT_FUSE_AMQ_PORT}
+bindPort=${env:OPENSHIFT_FUSE_OPENWIRE_PORT}
 ```
 
 
