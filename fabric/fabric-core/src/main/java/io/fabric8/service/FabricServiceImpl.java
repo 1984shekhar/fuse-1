@@ -541,7 +541,8 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
         return Collections.unmodifiableMap(validProviders);
     }
 
-    private Map<String, ContainerProvider> getProviders() {
+    @Override
+    public Map<String, ContainerProvider> getProviders() {
         assertValid();
         return Collections.unmodifiableMap(providers);
     }

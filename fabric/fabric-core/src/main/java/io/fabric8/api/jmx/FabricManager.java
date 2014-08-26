@@ -46,6 +46,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getChildrenSafe;
@@ -1112,9 +1113,18 @@ public class FabricManager implements FabricManagerMBean {
 
     @Override
     public Map<String, String> registeredProviders() {
-        Map<String, ContainerProvider> providers = getFabricService().getValidProviders();
+        Map<String, ContainerProvider> providers = fabricService.getProviders();
+        return toJsonMap(providers);
+    }
 
-        Map<String, String> answer = new HashMap<String, String>();
+    @Override
+    public Map<String, String> registeredValidProviders() {
+        Map<String, ContainerProvider> providers = fabricService.getValidProviders();
+        return toJsonMap(providers);
+    }
+
+    private Map<String, String> toJsonMap(Map<String, ContainerProvider> providers) {
+        Map<String, String> answer = new TreeMap<String, String>();
 
         for (String name : providers.keySet()) {
             answer.put(name, providers.get(name).getOptionsType().getName());

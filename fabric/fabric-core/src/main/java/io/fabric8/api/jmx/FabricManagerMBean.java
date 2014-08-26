@@ -261,6 +261,8 @@ public interface FabricManagerMBean {
 
     Map<String, String> registeredProviders();
 
+    Map<String, String> registeredValidProviders();
+
     void unregisterProvider(ContainerProvider provider, Map<String, Object> properties);
 
     void unregisterProvider(String scheme);
