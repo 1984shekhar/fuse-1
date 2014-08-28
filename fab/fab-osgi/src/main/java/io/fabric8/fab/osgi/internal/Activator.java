@@ -17,6 +17,8 @@
 package io.fabric8.fab.osgi.internal;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InterruptedIOException;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,9 +29,11 @@ import io.fabric8.fab.osgi.ServiceConstants;
 import org.apache.karaf.features.FeaturesService;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
-import org.osgi.service.cm.ConfigurationAdmin;
+import org.osgi.service.cm.*;
+import org.osgi.service.cm.Configuration;
 import org.osgi.service.url.URLStreamHandlerService;
 import org.osgi.util.tracker.ServiceTracker;
 import org.osgi.util.tracker.ServiceTrackerCustomizer;
@@ -41,6 +45,8 @@ public class Activator implements BundleActivator, ServiceTrackerCustomizer {
     private static Activator instance;
 
     private BundleContext bundleContext;
+
+    private ConfigAdmin configAdmin;
 
     private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 
@@ -69,19 +75,19 @@ public class Activator implements BundleActivator, ServiceTrackerCustomizer {
     public void start(final BundleContext bundleContext) {
         this.bundleContext = bundleContext;
 
-        ServiceReference serviceReference = bundleContext.getServiceReference("org.osgi.service.cm.ConfigurationAdmin");
-        ConfigurationAdmin configurationAdmin = (ConfigurationAdmin) bundleContext.getService(serviceReference);
+        configAdmin = new ConfigAdmin();
+        configAdmin.open();
 
         File data = new File(System.getProperty("karaf.data", "."));
         registry.setDirectory(new File(data, "fab-module-registry"));
-        registry.setConfigurationAdmin(configurationAdmin);
+        registry.setConfigurationAdmin(configAdmin);
         registry.setPid("io.fabric8.fab.osgi.registry");
         registry.load();
 
         // Create and register the FabResolverFactory
         factory = new FabResolverFactoryImpl();
         factory.setBundleContext(bundleContext);
-        factory.setConfigurationAdmin(configurationAdmin);
+        factory.setConfigurationAdmin(configAdmin);
         registerFabResolverFactory(factory);
 
         // track FeaturesService for use by factory
@@ -126,6 +132,7 @@ public class Activator implements BundleActivator, ServiceTrackerCustomizer {
         }
         registrations.clear();
         factory = null;
+        configAdmin.close();
     }
 
     public BundleContext getBundleContext() {
@@ -155,5 +162,49 @@ public class Activator implements BundleActivator, ServiceTrackerCustomizer {
             }
         }
 
+    }
+
+    public class ConfigAdmin extends ServiceTracker<ConfigurationAdmin, ConfigurationAdmin> implements ConfigurationAdmin {
+
+        public ConfigAdmin() {
+            super(bundleContext, ConfigurationAdmin.class, null);
+        }
+
+        private ConfigurationAdmin getConfigAdmin() throws IOException {
+            try {
+                ConfigurationAdmin ca = waitForService(5000l);
+                if (ca != null) {
+                    return ca;
+                }
+                throw new IllegalStateException("ConfigurationAdmin not present");
+            } catch (InterruptedException e) {
+                throw (IOException) new InterruptedIOException("ConfigurationAdmin not present").initCause(e);
+            }
+        }
+
+        @Override
+        public org.osgi.service.cm.Configuration createFactoryConfiguration(String factoryPid) throws IOException {
+            return getConfigAdmin().createFactoryConfiguration(factoryPid);
+        }
+
+        @Override
+        public Configuration createFactoryConfiguration(String factoryPid, String location) throws IOException {
+            return getConfigAdmin().createFactoryConfiguration(factoryPid, location);
+        }
+
+        @Override
+        public Configuration getConfiguration(String pid, String location) throws IOException {
+            return getConfigAdmin().getConfiguration(pid, location);
+        }
+
+        @Override
+        public Configuration getConfiguration(String pid) throws IOException {
+            return getConfigAdmin().getConfiguration(pid);
+        }
+
+        @Override
+        public Configuration[] listConfigurations(String filter) throws IOException, InvalidSyntaxException {
+            return getConfigAdmin().listConfigurations(filter);
+        }
     }
 }
