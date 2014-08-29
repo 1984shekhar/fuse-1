@@ -18,23 +18,23 @@
            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
            xmlns:cxf="http://camel.apache.org/schema/blueprint/cxf"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
+           xmlns:ext="http://aries.apache.org/blueprint/xmlns/blueprint-ext/v1.0.0"
            xsi:schemaLocation="
            http://www.osgi.org/xmlns/blueprint/v1.0.0
            http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
            http://camel.apache.org/schema/blueprint/cxf
            http://camel.apache.org/schema/blueprint/cxf/camel-cxf.xsd">
 
+    <ext:property-placeholder placeholder-prefix="$[" placeholder-suffix="]" />
     <cm:property-placeholder id="placeholder" persistent-id="io.fabric8.examples.camel.cxf" update-strategy="reload">
         <cm:default-properties>
             <cm:property name="greeterPort" value="9090"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
-
     <cxf:cxfEndpoint id="greeterEndpoint"
-                     address="http://localhost:${greeterPort}/greeter/"
+                     address="http://$[bind.address]:${greeterPort}/greeter/"
                      serviceClass="io.fabric8.examples.camelcxf.Greeter"/>
-
 
     <camelContext id="fabric-camel-demo" xmlns="http://camel.apache.org/schema/blueprint"
                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
