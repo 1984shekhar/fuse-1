@@ -47,7 +47,7 @@ public class FabClassPathResolverTest {
 
     @Test
     public void testMissingHeaderParsing() {
-        FabClassPathResolver resolver = new FabClassPathResolver(new MockFabFacade(), null, null) {
+        FabClassPathResolver resolver = new FabClassPathResolver(null, new MockFabFacade(), null, null) {
             @Override
             public String getManifestProperty(String name) {
                 // always returning blank here because that's what the real implementation does for a missing header
@@ -59,7 +59,7 @@ public class FabClassPathResolverTest {
 
     @Test
     public void testAvailableHeaderParsing() {
-        FabClassPathResolver resolver = new FabClassPathResolver(new MockFabFacade(), null, null) {
+        FabClassPathResolver resolver = new FabClassPathResolver(null, new MockFabFacade(), null, null) {
 
             Map<String, String> properties = Services.createProperties(INSTR_FAB_INSTALL_PROVIDED_BUNDLE_DEPENDENCIES, "true");
 
@@ -73,7 +73,7 @@ public class FabClassPathResolverTest {
 
     @Test
     public void testDefaultValueForProvidedDependency() {
-        FabClassPathResolver resolver = new FabClassPathResolver(new MockFabFacade(), null, null) {
+        FabClassPathResolver resolver = new FabClassPathResolver(null, new MockFabFacade(), null, null) {
 
             @Override
             public String getManifestProperty(String name) {
@@ -92,7 +92,7 @@ public class FabClassPathResolverTest {
 
     @Test
     public void testConfigureRequiredFeaturesAndURLS() throws URISyntaxException {
-        FabClassPathResolver resolver = new FabClassPathResolver(new FabClassPathResolverTest.MockFabFacade(), null, null) {
+        FabClassPathResolver resolver = new FabClassPathResolver(null, new FabClassPathResolverTest.MockFabFacade(), null, null) {
 
             Map<String, String> properties =
                     Services.createProperties(INSTR_FAB_REQUIRE_FEATURE, "karaf-framework camel-blueprint/2.9.0",
@@ -118,7 +118,7 @@ public class FabClassPathResolverTest {
 
     @Test
     public void testAddFeatureCollectorThroughPruningFilters() {
-        FabClassPathResolver resolver = new FabClassPathResolver(new MockFabFacade(), null, null);
+        FabClassPathResolver resolver = new FabClassPathResolver(null, new MockFabFacade(), null, null);
 
         MockFeatureCollectorFilter filter = new MockFeatureCollectorFilter();
         resolver.addPruningFilter(filter);
