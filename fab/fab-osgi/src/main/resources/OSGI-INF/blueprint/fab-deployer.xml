@@ -18,10 +18,6 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            default-activation="lazy">
 
-  <bean id="fabDeploymentListener" class="io.fabric8.fab.osgi.FabDeploymentListener"/>
-
-  <service ref="fabDeploymentListener" auto-export="interfaces" depends-on="fabDeploymentListener" ranking="1"/>
-
   <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.1.0">
     <command name="fab/tree">
         <action class="io.fabric8.fab.osgi.commands.fab.TreeCommand"/>

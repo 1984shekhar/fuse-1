@@ -24,6 +24,7 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 
+import io.fabric8.fab.osgi.FabDeploymentListener;
 import io.fabric8.fab.osgi.FabResolverFactory;
 import io.fabric8.fab.osgi.FabURLHandler;
 import io.fabric8.fab.osgi.ServiceConstants;
@@ -137,6 +138,8 @@ public class Activator implements BundleActivator {
         handler.setFabResolverFactory(factory);
         handler.setServiceProvider(factory);
         registerURLHandler(handler);
+
+        registerFabDeploymentListener(new FabDeploymentListener());
     }
 
     protected void unbindConfigAdmin() {
@@ -166,6 +169,21 @@ public class Activator implements BundleActivator {
     private void registerFabResolverFactory(FabResolverFactoryImpl factory) {
         if (bundleContext != null && factory != null) {
             ServiceRegistration registration = bundleContext.registerService(FabResolverFactory.class, factory, null);
+            registrations.add(registration);
+        }
+    }
+
+    /*
+     * Register the {@link FabDeploymentListener}
+     */
+    private void registerFabDeploymentListener(FabDeploymentListener listener) {
+        if (bundleContext != null && listener != null) {
+            Hashtable<String, Object> props = new Hashtable<String, Object>();
+            props.put(Constants.SERVICE_RANKING, 1);
+            ServiceRegistration registration = bundleContext.registerService(
+                    new String[] { ArtifactUrlTransformer.class.getName(), ArtifactListener.class.getName() },
+                    listener,
+                    props);
             registrations.add(registration);
         }
     }
