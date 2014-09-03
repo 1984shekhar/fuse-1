@@ -284,6 +284,11 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
                           update_pool_state()
                           started.set(false)
                         }
+                      } else {
+                        if (discoveryAgent.getServices().isEmpty()) {
+                          info("Reconnected to the group", name)
+                          registerConnectors()
+                        }
                       }
                     } else {
                       if (started.compareAndSet(true, false)) {
@@ -469,18 +474,22 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
 
         // Update the advertised endpoint URIs that clients can use.
         if (!standalone || replicating) {
-          discoveryAgent.setServices( connectors.flatMap { name=>
-            val connector = server._2.getConnectorByName(name)
-            if ( connector==null ) {
-              warn("ActiveMQ broker '%s' does not have a connector called '%s'", name, name)
-              None
-            } else {
-              Some(connector.getConnectUri.getScheme + "://${zk:" + System.getProperty("karaf.name") + "/ip}:" + connector.getPublishableConnectURI.getPort)
-            }
-          })
+          registerConnectors()
         }
 
         if (registerService) osgiRegister(server._2)
+    }
+
+    private def registerConnectors(): Unit = {
+      discoveryAgent.setServices( connectors.flatMap { name=>
+        val connector = server._2.getConnectorByName(name)
+        if ( connector==null ) {
+          warn("ActiveMQ broker '%s' does not have a connector called '%s'", name, name)
+          None
+        } else {
+          Some(connector.getConnectUri.getScheme + "://${zk:" + System.getProperty("karaf.name") + "/ip}:" + connector.getPublishableConnectURI.getPort)
+        }
+      })
     }
 
     private def doStop() {
