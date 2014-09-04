@@ -172,9 +172,18 @@ public final class FabricConfigAdminBridge extends AbstractComponent implements 
         if (!c.equals(old)) {
             LOGGER.info("Updating configuration {}", config.getPid());
             c.put(FABRIC_ZOOKEEPER_PID, pid);
-            if (config.getBundleLocation() != null) {
-                config.setBundleLocation(null);
-            }
+            // FABRIC-1078. Do *not* set the bundle location to null
+            // causes org.apache.felix.cm.impl.ConfigurationManager.locationChanged() to be fired and:
+            // - one of the listeners (SCR) tries to getConfiguration(pid)
+            // - bundle location is checked to be null
+            // - bundle location is set
+            // - org.apache.felix.cm.impl.ConfigurationBase.storeSilently() is invoked
+            // and all of this *after* the below config.update(), only with *old* values, so even if we update
+            // here (fabric-config-admin thread), the PID may be overwritten by CM Event Dispatcher thread
+            // using old values
+//            if (config.getBundleLocation() != null) {
+//                config.setBundleLocation(null);
+//            }
             config.update(c);
         } else {
             if (LOGGER.isDebugEnabled()) {
