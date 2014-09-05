@@ -25,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import com.openshift.client.IGearProfile;
+import com.openshift.client.NotFoundOpenShiftException;
 import com.openshift.client.OpenShiftTimeoutException;
 
 import com.openshift.internal.client.httpclient.NotFoundException;
@@ -270,8 +271,8 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         if (app != null) {
             try {
                 app.destroy();
-            } catch (NotFoundException e) {
-                LOG.debug("Ignoring '\"{}\" when destroying {}", e.getMessage(), container.getId());
+            } catch (NotFoundOpenShiftException e) {
+                LOG.debug("Ignoring '{}' when destroying {} container", e.getMessage(), container.getId());
             }
         }
     }
