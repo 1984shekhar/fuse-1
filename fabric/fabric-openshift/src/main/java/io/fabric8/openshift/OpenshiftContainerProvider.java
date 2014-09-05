@@ -27,6 +27,7 @@ import java.util.concurrent.TimeUnit;
 import com.openshift.client.IGearProfile;
 import com.openshift.client.OpenShiftTimeoutException;
 
+import com.openshift.internal.client.httpclient.NotFoundException;
 import io.fabric8.api.FabricException;
 import io.fabric8.api.scr.Configurer;
 import org.apache.felix.scr.annotations.Activate;
@@ -267,7 +268,11 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         assertValid();
         IApplication app = getContainerApplication(container, false);
         if (app != null) {
-            app.destroy();
+            try {
+                app.destroy();
+            } catch (NotFoundException e) {
+                LOG.debug("Ignoring '\"{}\" when destroying {}", e.getMessage(), container.getId());
+            }
         }
     }
 
