@@ -157,4 +157,12 @@ public class Strings {
     public static boolean isNotBlank(String text) {
         return !isNullOrBlank(text);
     }
+
+    public static String stripSuffix(String value, String suffix) {
+        if( !value.endsWith(suffix) ) {
+            return value;
+        } else {
+            return value.substring(0, value.length()-suffix.length());
+        }
+    }
 }

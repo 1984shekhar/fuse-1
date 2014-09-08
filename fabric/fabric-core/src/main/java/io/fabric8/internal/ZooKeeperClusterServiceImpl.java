@@ -23,22 +23,14 @@ import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getStringData;
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getSubstitutedData;
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getSubstitutedPath;
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.setData;
-import io.fabric8.api.Constants;
-import io.fabric8.api.Container;
-import io.fabric8.api.CreateEnsembleOptions;
+
+import io.fabric8.api.*;
 import io.fabric8.api.CreateEnsembleOptions.Builder;
-import io.fabric8.api.DataStore;
-import io.fabric8.api.DataStoreRegistrationHandler;
-import io.fabric8.api.DataStoreTemplate;
-import io.fabric8.api.EnsembleModificationFailed;
-import io.fabric8.api.FabricException;
-import io.fabric8.api.FabricService;
-import io.fabric8.api.RuntimeProperties;
-import io.fabric8.api.ZooKeeperClusterBootstrap;
-import io.fabric8.api.ZooKeeperClusterService;
 import io.fabric8.api.jcip.ThreadSafe;
 import io.fabric8.api.scr.AbstractComponent;
 import io.fabric8.api.scr.ValidatingReference;
+import io.fabric8.service.ContainerTemplate;
+import io.fabric8.service.JmxTemplateSupport;
 import io.fabric8.utils.DataStoreUtils;
 import io.fabric8.utils.PasswordEncoder;
 import io.fabric8.utils.Ports;
@@ -46,6 +38,7 @@ import io.fabric8.utils.SystemProperties;
 import io.fabric8.zookeeper.ZkPath;
 
 import java.io.File;
+import java.net.URL;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -67,10 +60,14 @@ import org.apache.felix.scr.annotations.Component;
 import org.apache.felix.scr.annotations.Deactivate;
 import org.apache.felix.scr.annotations.Reference;
 import org.apache.felix.scr.annotations.Service;
+import org.apache.karaf.admin.management.AdminServiceMBean;
 import org.osgi.service.cm.Configuration;
 import org.osgi.service.cm.ConfigurationAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.management.ObjectName;
+import javax.management.remote.JMXConnector;
 
 @ThreadSafe
 @Component(name = "io.fabric8.zookeeper.cluster.service", label = "Fabric8 ZooKeeper Cluster Service", metatype = false)
@@ -272,10 +269,10 @@ public final class ZooKeeperClusterServiceImpl extends AbstractComponent impleme
                 dataStore.get().setProfileAttribute(version, ensembleMemberProfile, "hidden", "true");
                 dataStore.get().setProfileAttribute(version, ensembleMemberProfile, "parents", ensembleProfile);
 
-                String port1 = Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_SERVER_PORT, minimumPort, maximumPort)));
+                String port1 = publicPort(container, Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_SERVER_PORT, minimumPort, maximumPort))));
                 if (containers.size() > 1) {
-                    String port2 = Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_PEER_PORT, minimumPort, maximumPort)));
-                    String port3 = Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_ELECTION_PORT, minimumPort, maximumPort)));
+                    String port2 = publicPort(container, Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_PEER_PORT, minimumPort, maximumPort))));
+                    String port3 = publicPort(container, Integer.toString(findPort(usedPorts, ip, mapPortToRange(Ports.DEFAULT_ZOOKEEPER_ELECTION_PORT, minimumPort, maximumPort))));
                     ensembleProperties.put("server." + Integer.toString(index), "${zk:" + container + "/ip}:" + port2 + ":" + port3);
                     ensembleMemberProperties.put("server.id", Integer.toString(index));
                 }
@@ -382,6 +379,19 @@ public final class ZooKeeperClusterServiceImpl extends AbstractComponent impleme
         } catch (Exception e) {
             throw EnsembleModificationFailed.launderThrowable(e);
         }
+    }
+
+    private String publicPort(String containerName, final String port) {
+        FabricService fabric = fabricService.get();
+        Container container = fabric.getContainer(containerName);
+
+        ContainerTemplate containerTemplate = new ContainerTemplate(container, fabric.getZooKeeperUser(), fabric.getZookeeperPassword(), false);
+        return containerTemplate.execute(new JmxTemplateSupport.JmxConnectorCallback<String>() {
+            @Override
+            public String doWithJmxConnector(JMXConnector connector) throws Exception {
+                return connector.getMBeanServerConnection().invoke(new ObjectName("io.fabric8:type=Fabric"), "getPublicPortOnCurrentContainer", new Object[]{new Integer(port)}, new String[]{"int"}).toString();
+            }
+        });
     }
 
     public void addToCluster(List<String> containers) {

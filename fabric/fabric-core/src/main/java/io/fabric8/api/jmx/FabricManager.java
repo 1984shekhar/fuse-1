@@ -24,6 +24,7 @@ import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.node.ObjectNode;
 import io.fabric8.api.*;
 import io.fabric8.service.FabricServiceImpl;
+import org.fusesource.common.util.PublicPortMapper;
 import org.fusesource.insight.log.support.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -649,6 +650,16 @@ public class FabricManager implements FabricManagerMBean {
         return getFabricService().getCurrentContainerName();
     }
 
+
+    @Override
+    public int getPublicPortOnCurrentContainer(int localPort) {
+        try {
+            return PublicPortMapper.getPublicPort(localPort);
+        } catch (Throwable e) {
+            e.printStackTrace();
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public String getDefaultJvmOptions() {
