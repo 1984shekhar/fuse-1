@@ -166,8 +166,9 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
         Set<String> profiles = options.getProfiles();
         String versionId = options.getVersion();
         Map<String, String> openshiftConfigOverlay = new HashMap<String, String>();
+        FabricService fabric = fabricService.get();
         if (profiles != null && versionId != null) {
-            Version version = fabricService.get().getVersion(versionId);
+            Version version = fabric.getVersion(versionId);
             if (version != null) {
                 for (String profileId : profiles) {
                     Profile profile = version.getProfile(profileId);
@@ -195,8 +196,8 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
             cartridge = new StandaloneCartridge(new URL(standAloneCartridgeUrl));
         }
 
-        String zookeeperUrl = fabricService.get().getZookeeperUrl();
-        String zookeeperPassword = fabricService.get().getZookeeperPassword();
+        String zookeeperUrl = fabric.getZookeeperUrl();
+        String zookeeperPassword = fabric.getZookeeperPassword();
 
         Map<String,String> userEnvVars = null;
         if (!options.isEnsembleServer()) {
@@ -205,6 +206,9 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
             userEnvVars.put("OPENSHIFT_FUSE_ZOOKEEPER_PASSWORD", zookeeperPassword);
             String zkPasswordEncode = System.getProperty("zookeeper.password.encode", "true");
             userEnvVars.put("OPENSHIFT_FUSE_ZOOKEEPER_PASSWORD_ENCODE", zkPasswordEncode);
+            String sshUrl[] = fabric.getCurrentContainer().getSshUrl().split(":");
+            userEnvVars.put("OPENSHIFT_FUSE_EXTERNAL_DNS", sshUrl[0]);
+            userEnvVars.put("OPENSHIFT_FUSE_EXTERNAL_SSH_PORT", sshUrl[1]);
         }
 
         String initGitUrl = null;
