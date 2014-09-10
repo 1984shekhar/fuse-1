@@ -5,6 +5,7 @@ import com.openshift.client.IDomain;
 import com.openshift.client.IOpenShiftConnection;
 import com.openshift.client.IUser;
 import com.openshift.client.cartridge.StandaloneCartridge;
+import com.openshift.internal.client.GearProfile;
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.Option;
@@ -16,6 +17,9 @@ public class ApplicationCreateCommand extends OpenshiftCommandSupport {
 
     @Option(name = "--domain", required = false, description = "Create applications on that domain.")
     String domainId;
+
+    @Option(name = "--gear-size", description = "Gear size controls how much memory and CPU your cartridges can use.")
+    private String gearSize = "small";
 
     @Argument(index = 0, name = "application", required = true, description = "The target application.")
     String applicationName;
@@ -32,7 +36,7 @@ public class ApplicationCreateCommand extends OpenshiftCommandSupport {
             domain = user.createDomain(domainId);
         }
 
-        IApplication application = domain.createApplication(applicationName, new StandaloneCartridge(cartridge));
+        IApplication application = domain.createApplication(applicationName, new StandaloneCartridge(cartridge), null, new GearProfile(gearSize));
         System.out.println(application.getCreationLog());
         return null;
     }
