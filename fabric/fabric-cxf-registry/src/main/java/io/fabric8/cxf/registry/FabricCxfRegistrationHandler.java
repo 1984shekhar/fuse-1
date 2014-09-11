@@ -293,7 +293,11 @@ public final class FabricCxfRegistrationHandler extends AbstractComponent implem
             URI uri = new URI(address);
             int port = PublicPortMapper.getPublicPort(uri.getPort());
             String hostname = "${zk:" + container + "/ip}";
-            return uri.getScheme() + "://" + hostname + ":" + port + "/" + uri.getPath();
+            String path = uri.getPath();
+            while (path.startsWith("/")) {
+                path = path.substring(1);
+            }
+            return uri.getScheme() + "://" + hostname + ":" + port + "/" + path;
         } catch (URISyntaxException e) {
             LOGGER.warn("Could not map URL to a public address: " + address);
             return address;

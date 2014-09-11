@@ -26,19 +26,22 @@ abstract public class PublicPortMapper {
 
     static public class OpenShiftSPI extends SPI {
 
-        HashMap<Integer,Integer> ports = new HashMap<Integer,Integer>();
+        HashMap<Integer, Integer> ports = new HashMap<Integer, Integer>();
 
         public OpenShiftSPI() {
             Map<String, String> envs = System.getenv();
             for (Map.Entry<String, String> entry : envs.entrySet()) {
                 String key = entry.getKey();
                 String publicPort = entry.getValue();
-                if( key.startsWith("OPENSHIFT_") && key.endsWith("_PROXY_PORT") ) {
+                if (key.startsWith("OPENSHIFT_") && key.endsWith("_PROXY_PORT")) {
                     String prefix = Strings.stripSuffix(key, "_PROXY_PORT");
-                    String privatePort = envs.get(prefix+"_PORT");
-                    if( privatePort!=null ) {
+                    String privatePort = envs.get(prefix + "_PORT");
+                    if (privatePort == null) {
+                        privatePort = envs.get(prefix);
+                    }
+                    if (privatePort != null) {
                         try {
-                            ports.put(new Integer(privatePort), new Integer(publicPort) );
+                            ports.put(new Integer(privatePort), new Integer(publicPort));
                         } catch (NumberFormatException ignore) {
                         }
                     }
@@ -50,7 +53,7 @@ abstract public class PublicPortMapper {
         @Override
         int getPublicPort(int localPort) {
             Integer rc = ports.get(localPort);
-            if( rc != null ) {
+            if (rc != null) {
                 return rc.intValue();
             }
             return localPort;
@@ -61,12 +64,12 @@ abstract public class PublicPortMapper {
         Class mapperClass = DefaultSPI.class;
         String mapperClassName = System.getProperty(PublicPortMapper.class.getName());
         try {
-            if( mapperClassName!=null ) {
+            if (mapperClassName != null) {
                 mapperClassName = mapperClassName.trim();
-                if( mapperClassName.equals("default") ) {
+                if (mapperClassName.equals("default")) {
                     mapperClassName = DefaultSPI.class.getName();
                 }
-                if( mapperClassName.equals("openshift") ) {
+                if (mapperClassName.equals("openshift")) {
                     mapperClassName = OpenShiftSPI.class.getName();
                 }
                 try {
