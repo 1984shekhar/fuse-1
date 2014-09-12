@@ -33,8 +33,8 @@ public class ContainerCreateOpenshift extends ContainerCreateSupport {
     @Argument(index = 0, required = true, description = "The name of the container to be created. When creating multiple containers it serves as a prefix")
     protected String name;
 
-    @Option(name = "--gear-size", description = "Gear size controls how much memory and CPU your cartridges can use.")
-    private String gearSize;
+    @Option(name = "--gear-profile", description = "Gear profile controls how much memory and CPU your cartridges can use.")
+    private String gearProfile;
 
     @Argument(index = 1, required = false, description = "The number of containers that should be created")
     protected int number = 0;
@@ -74,8 +74,8 @@ public class ContainerCreateOpenshift extends ContainerCreateSupport {
                 .dataStoreProperties(getDataStoreProperties())
                 .dataStoreType(dataStoreType != null && isEnsembleServer ? dataStoreType : fabricService.getDataStore().getType());
 
-        if( gearSize!=null ) {
-            builder.gearProfile(gearSize);
+        if( gearProfile !=null ) {
+            builder.gearProfile(gearProfile);
         }
 
         CreateContainerMetadata[] metadatas = fabricService.createContainers(builder.build());
