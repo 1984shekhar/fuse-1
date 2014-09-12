@@ -464,7 +464,7 @@ public final class FabricServiceImpl extends AbstractComponent implements Fabric
                 new Thread("Creating container " + containerName) {
                     public void run() {
                         try {
-                            if (getContainer(containerNameFinal) != null) {
+                            if (getDataStore().hasContainer(containerNameFinal)) {
                                 CreateContainerBasicMetadata metadata = new CreateContainerBasicMetadata();
                                 metadata.setContainerName(containerNameFinal);
                                 metadata.setCreateOptions(containerOptions);
