@@ -457,7 +457,9 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
             if (started.get && server != null) {
               if (server._2.isRestartAllowed && server._2.isRestartRequested) {
                 info("Restarting broker '%s' after shutdown on restart request", name)
-                discoveryAgent.setServices(Array[String]())
+                if (!standalone) {
+                  discoveryAgent.setServices(Array[String]())
+                }
                 start()
               } else {
                 info("Broker '%s' shut down, giving up being master", name)
