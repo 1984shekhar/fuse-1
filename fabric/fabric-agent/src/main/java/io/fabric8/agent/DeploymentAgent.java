@@ -40,6 +40,7 @@ import io.fabric8.fab.MavenResolverImpl;
 import io.fabric8.fab.osgi.ServiceConstants;
 import io.fabric8.fab.osgi.internal.Configuration;
 import io.fabric8.fab.osgi.internal.FabResolverFactoryImpl;
+import io.fabric8.fab.osgi.internal.OsgiModuleRegistry;
 import io.fabric8.utils.ChecksumUtils;
 import io.fabric8.utils.Files;
 import org.osgi.framework.*;
@@ -496,6 +497,7 @@ public class DeploymentAgent implements ManagedService {
         FabResolverFactoryImpl fabResolverFactory = new FabResolverFactoryImpl();
         fabResolverFactory.setConfiguration(new FabricFabConfiguration(config, propertyResolver));
         fabResolverFactory.setBundleContext(bundleContext);
+        fabResolverFactory.setRegistry(new OsgiModuleRegistry());
         fabResolverFactory.setFeaturesService(new FeaturesServiceImpl() {
             @Override
             public Repository[] listRepositories() {

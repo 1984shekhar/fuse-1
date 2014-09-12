@@ -236,6 +236,7 @@
             io.fabric8.fab.osgi.internal;
             io.fabric8.fab.osgi.util;
             io.fabric8.maven.impl;
+            io.fabric8.maven.util;
             io.fabric8.utils;
             io.fabric8.utils.features;
             io.fabric8.utils.json;
