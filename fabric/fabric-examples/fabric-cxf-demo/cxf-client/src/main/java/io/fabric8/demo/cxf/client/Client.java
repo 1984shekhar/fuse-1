@@ -57,8 +57,10 @@ public class Client {
         return hello;
     }
     
-    public static void main(String args[]) {
+    public static void main(String args[]) throws Exception {
         Client client = new Client();
+        // 1 sec should be enough to fetch the load balance info from ZooKeeper
+        Thread.sleep(1000);
         System.out.println("Calling the sayHello first time with the result "  + client.getProxy().sayHello());
         System.out.println("Calling the sayHello second time with the result " +  client.getProxy().sayHello());
         System.out.println("Calling the sayHello third time with the result " +  client.getProxy().sayHello());
