@@ -23,28 +23,11 @@ import java.util.Map;
 
 import io.fabric8.groups.Group;
 import io.fabric8.groups.GroupListener;
-import io.fabric8.groups.internal.ZooKeeperGroup;
-import io.fabric8.zookeeper.spring.ZKServerFactoryBean;
-import junit.framework.Assert;
-import org.apache.camel.CamelContext;
-import org.apache.camel.Component;
-import org.apache.camel.Route;
-import org.apache.camel.spring.SpringRouteBuilder;
-import org.apache.camel.util.ServiceHelper;
 import org.apache.curator.framework.CuratorFramework;
-import org.easymock.EasyMock;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.AbstractJUnit4SpringContextTests;
 
-import static org.easymock.EasyMock.createMock;
-import static org.easymock.EasyMock.expect;
-import static org.easymock.EasyMock.replay;
-import static org.hamcrest.CoreMatchers.any;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
