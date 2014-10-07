@@ -16,6 +16,7 @@
  */
 package io.fabric8.openshift;
 
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -207,8 +208,18 @@ public final class OpenshiftContainerProvider extends AbstractComponent implemen
             String zkPasswordEncode = System.getProperty("zookeeper.password.encode", "true");
             userEnvVars.put("OPENSHIFT_FUSE_ZOOKEEPER_PASSWORD_ENCODE", zkPasswordEncode);
             String sshUrl[] = fabric.getCurrentContainer().getSshUrl().split(":");
+            int httpPort = 80;
+            try {
+                httpPort = new URL(fabric.getCurrentContainer().getHttpUrl()).getPort();
+                if( httpPort < 1 ) {
+                    httpPort = 80;
+                }
+            } catch (MalformedURLException e) {
+                e.printStackTrace();
+            }
             userEnvVars.put("OPENSHIFT_FUSE_EXTERNAL_DNS", sshUrl[0]);
             userEnvVars.put("OPENSHIFT_FUSE_EXTERNAL_SSH_PORT", sshUrl[1]);
+            userEnvVars.put("OPENSHIFT_FUSE_EXTERNAL_HTTP_PORT", ""+httpPort);
         }
 
         String initGitUrl = null;
