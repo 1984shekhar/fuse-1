@@ -68,6 +68,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
@@ -83,6 +84,10 @@ import static org.osgi.framework.Bundle.UNINSTALLED;
 public class DeploymentAgent implements ManagedService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeploymentAgent.class);
+
+    public static final String OBR_RESOLVE_OPTIONAL_IMPORTS = "obr.resolve.optional.imports";
+    public static final String RESOLVE_OPTIONAL_IMPORTS = "resolve.optional.imports";
+    public static final String URL_HANDLERS_TIMEOUT = "url.handlers.timeout";
 
     public static final String FABRIC_ZOOKEEPER_PID = "fabric.zookeeper.pid";
     private static final String SNAPSHOT = "SNAPSHOT";
@@ -107,7 +112,7 @@ public class DeploymentAgent implements ManagedService {
     private ExecutorService downloadExecutor;
     private volatile boolean shutdownDownloadExecutor;
     private DownloadManager manager;
-    private boolean resolveOptionalImports = false;
+    private boolean resolveOptionalImports = true;
     private long urlHandlersTimeout;
 
     private final RequirementSort requirementSort = new RequirementSort();
@@ -165,6 +170,31 @@ public class DeploymentAgent implements ManagedService {
             }
         });
         fabricService.open();
+    }
+
+    static boolean getResolveOptionalImports(Dictionary<String, ?> config) {
+        if (config != null) {
+            String str = (String) config.get(OBR_RESOLVE_OPTIONAL_IMPORTS);
+            if (str == null) {
+                str = (String) config.get(RESOLVE_OPTIONAL_IMPORTS);
+            }
+            if (str != null) {
+                return Boolean.parseBoolean(str);
+            }
+        }
+        return false;
+    }
+
+    static long getUrlHandlersTimeout(Dictionary<String, ?> config) {
+        if (config != null) {
+            Object timeout = config.get(URL_HANDLERS_TIMEOUT);
+            if (timeout instanceof Number) {
+                return ((Number) timeout).longValue();
+            } else if (timeout instanceof String) {
+                return Long.parseLong((String) timeout);
+            }
+        }
+        return TimeUnit.MILLISECONDS.convert(5, TimeUnit.MINUTES);
     }
 
     public boolean isResolveOptionalImports() {
@@ -347,6 +377,9 @@ public class DeploymentAgent implements ManagedService {
         if (props.get("disabled") != null && "true".equalsIgnoreCase(props.get("disabled").toString())) {
             return false;
         }
+
+        resolveOptionalImports = getResolveOptionalImports(props);
+        urlHandlersTimeout = getUrlHandlersTimeout(props);
 
         // Adding the maven proxy URL to the list of repositories.
         addMavenProxies(props, fabricService.getService());
