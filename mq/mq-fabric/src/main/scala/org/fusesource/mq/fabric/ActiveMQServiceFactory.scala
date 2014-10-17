@@ -285,7 +285,7 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
                           started.set(false)
                         }
                       } else {
-                        if (discoveryAgent.getServices().isEmpty() && server._2 != null && server._2.isStarted) {
+                        if (discoveryAgent.getServices().isEmpty() && server != null && server._2 != null && server._2.isStarted) {
                           info("Reconnected to the group", name)
                           registerConnectors()
                         }
