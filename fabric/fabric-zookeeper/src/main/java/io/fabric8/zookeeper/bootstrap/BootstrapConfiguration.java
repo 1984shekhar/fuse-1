@@ -113,6 +113,9 @@ public class BootstrapConfiguration extends AbstractComponent {
     @Property(name = "manualip", label = "Global Resolver", description = "The global resolver", value = "${manualip}")
     private String manualip;
 
+    @Property(name = "publichostname", label = "Public Hostname", description = "The public hostname", value = "${publichostname}")
+    private String publichostname;
+
     @Property(name = "name", label = "Container Name", description = "The name of the container", value = "${karaf.name}", propertyPrivate = true)
     private String name;
     @Property(name = "home", label = "Container Home", description = "The home directory of the container", value = "${karaf.home}", propertyPrivate = true)
@@ -184,6 +187,7 @@ public class BootstrapConfiguration extends AbstractComponent {
     public String getConnectionUrl(CreateEnsembleOptions options) throws UnknownHostException {
         int zooKeeperServerConnectionPort = options.getZooKeeperServerConnectionPort();
         String connectionUrl = getConnectionAddress(options) + ":" + zooKeeperServerConnectionPort;
+        LOGGER.debug("Using ZK connection URL:" + connectionUrl);
         return connectionUrl;
     }
 
@@ -252,6 +256,8 @@ public class BootstrapConfiguration extends AbstractComponent {
             return HostUtils.getLocalHostName();
         } else if (oResolver.equals(ZkDefs.LOCAL_IP)) {
             return HostUtils.getLocalIp();
+        } else if (oResolver.equals(ZkDefs.PUBLIC_HOSTNAME) && (publichostname != null && !publichostname.isEmpty())) {
+            return publichostname;
         } else if (oResolver.equals(ZkDefs.MANUAL_IP) && (oManualIp != null && !oManualIp.isEmpty())) {
             return options.getManualIp();
         } else
