@@ -47,12 +47,15 @@
             com.google.common.base;-split-package:=first,
             io.fabric8.utils;-split-package:=first,
             io.fabric8.maven.util,
+            org.apache.commons.io*,
+            org.apache.commons.logging*;-split-package:=first,
             org.apache.commons.codec*,
-            org.apache.commons.httpclient*,
+            org.apache.http.*;-split-package:=merge-first,
             org.apache.maven.*;-split-package:=merge-first,
             org.sonatype.aether*,
             org.sonatype.plexus*,
-            org.codehaus.plexus*
+            org.codehaus.plexus*,
+            org.jsoup.*
         </fuse.osgi.private.pkg>
         <fuse.osgi.service.component>OSGI-INF/*</fuse.osgi.service.component>
     </properties>
@@ -123,7 +126,7 @@
         <dependency>
             <groupId>org.apache.maven.wagon</groupId>
             <artifactId>wagon-file</artifactId>
-            <version>1.0-beta-7</version>
+            <version>${wagon-version}</version>
         </dependency>
 
         <dependency>
@@ -134,18 +137,8 @@
 
         <dependency>
             <groupId>org.apache.maven.wagon</groupId>
-            <artifactId>wagon-http-lightweight</artifactId>
-            <version>1.0-beta-7</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>nekohtml</groupId>
-                    <artifactId>nekohtml</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>nekohtml</groupId>
-                    <artifactId>xercesMinimal</artifactId>
-                </exclusion>
-            </exclusions>
+            <artifactId>wagon-http</artifactId>
+            <version>${wagon-version}</version>
         </dependency>
         <dependency>
             <groupId>commons-httpclient</groupId>

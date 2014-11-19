@@ -17,7 +17,6 @@
 
 package io.fabric8.itests.basic;
 
-import io.fabric8.api.Container;
 import io.fabric8.api.FabricService;
 import io.fabric8.api.ServiceProxy;
 import io.fabric8.itests.paxexam.support.ContainerBuilder;
@@ -38,12 +37,14 @@ import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.FileEntity;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.nio.entity.FileNIOEntity;
 import org.apache.karaf.tooling.exam.options.KarafDistributionOption;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
 import org.ops4j.pax.exam.junit.Configuration;
 import org.ops4j.pax.exam.junit.ExamReactorStrategy;
@@ -87,7 +88,7 @@ public class FabricMavenProxyTest extends FabricTestSupport {
                 HttpPut put = new HttpPut(uploadUrl);
                 client.getCredentialsProvider().setCredentials(AuthScope.ANY, new UsernamePasswordCredentials("admin", "admin"));
 
-                FileNIOEntity entity = new FileNIOEntity(new File(featureLocation), "text/xml");
+                FileEntity entity = new FileEntity(new File(featureLocation), ContentType.TEXT_XML);
                 put.setEntity(entity);
                 HttpResponse response = client.execute(put);
                 System.err.println("Response:" + response.getStatusLine());
