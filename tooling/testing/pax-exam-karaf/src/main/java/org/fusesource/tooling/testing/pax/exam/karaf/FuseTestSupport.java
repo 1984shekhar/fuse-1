@@ -163,6 +163,12 @@ public class FuseTestSupport {
         final PrintStream printStream = new PrintStream(byteArrayOutputStream);
         final CommandProcessor commandProcessor = ServiceLocator.awaitService(FrameworkUtil.getBundle(FuseTestSupport.class).getBundleContext(), CommandProcessor.class);
         final CommandSession commandSession = commandProcessor.createSession(System.in, printStream, printStream);
+
+        // When using the ssh:ssh command, the current ssh client calls KarafAgentFactory which expects the SSH_AUTH_SOCK env variable to be set,
+        // so work around the problem by registering the CommandSession in OSGi so that this variable is correctly initialised
+        BundleContext systemContext = FrameworkUtil.getBundle(FuseTestSupport.class).getBundleContext().getBundle(0).getBundleContext();
+        systemContext.registerService(CommandSession.class, commandSession, null);
+
         commandSession.put("APPLICATION", System.getProperty("karaf.name", "root"));
         commandSession.put("USER", "karaf");
         FutureTask<String> commandFuture = new FutureTask<String>(new Callable<String>() {
