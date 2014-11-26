@@ -30,6 +30,8 @@
 
     <properties>
         <fuse.osgi.import>
+            javax.crypto;
+            javax.crypto.spec;
             javax.net.ssl;
             javax.xml.namespace;
             javax.xml.parsers;
@@ -284,6 +286,8 @@
             org.sonatype.aether.version;
             org.sonatype.plexus.components.cipher;
             org.sonatype.plexus.components.sec.dispatcher;
+            org.sonatype.plexus.components.sec.dispatcher.model;
+            org.sonatype.plexus.components.sec.dispatcher.model.io.xpp3;
             -split-package:=merge-first
         </fuse.osgi.private.pkg>
         <fuse.osgi.activator>
