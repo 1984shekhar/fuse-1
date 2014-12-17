@@ -22,17 +22,21 @@ import org.apache.commons.logging.LogFactory;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.cxf.endpoint.Server;
 import org.apache.cxf.endpoint.ServerLifeCycleListener;
+import io.fabric8.cxf.env.CxfContextResolver;
 import io.fabric8.groups.Group;
 import org.fusesource.common.util.PublicPortMapper;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class FabricServerListener implements ServerLifeCycleListener {
     private static final transient Log LOG = LogFactory.getLog(FabricServerListener.class);
     private final Group<CxfNodeState> group;
+    private final CxfContextResolver cxfContextResolver;
     private ServerAddressResolver addressResolver;
     private final CuratorFramework curator;
     private final List<String> services = new ArrayList<String>();
@@ -41,6 +45,7 @@ public class FabricServerListener implements ServerLifeCycleListener {
         this.group = group;
         this.addressResolver = addressResolver;
         this.curator = curator;
+        this.cxfContextResolver = new CxfContextResolver();
     }
 
     public FabricServerListener(Group<CxfNodeState> group) {
@@ -53,7 +58,16 @@ public class FabricServerListener implements ServerLifeCycleListener {
         if (LOG.isDebugEnabled()) {
             LOG.debug("The CXF server is start with address " + address);
         }
-        services.add(address);
+        boolean exists = false;
+        for (String uri : services) {
+            if (uri.compareTo(address) == 0) {
+                exists = true;
+                break;
+            }
+        }
+        if (!exists) {
+            services.add(address);
+        }
         group.update(createState());
     }
 
@@ -80,11 +94,45 @@ public class FabricServerListener implements ServerLifeCycleListener {
         } else {
             answer = address;
         }
-        if (isFullAddress(address)) {
-            answer = toPublicAddress(address);
+        if (!isFullAddress(answer)) {
+            answer = getAddressPrefix() + answer;
+        }
+        if (isFullAddress(answer)) {
+            answer = toPublicAddress(answer);
         }
 
         return answer;
+    }
+
+    /**
+     * Tries to find the prefix for relative jaxws/jaxrs service addresses. It uses discovered CXF servlet prefix and
+     * ZK-registered URL of the container
+     *
+     * @return
+     */
+    private String getAddressPrefix() {
+        // TODO: won't work outside of Karaf
+        String containerId = System.getProperty("karaf.name");
+        if (containerId == null || containerId.trim().equals("")) {
+            return "";
+        }
+
+        if (curator != null) {
+            try {
+                // it'll be either http or https
+                String httpUrl = "${zk:" + containerId + "/http}";
+                String cxfPrefix = cxfContextResolver.getCxfServletContext();
+                curator.getZookeeperClient().blockUntilConnectedOrTimedOut();
+                httpUrl = ZooKeeperUtils.getSubstitutedData(curator, httpUrl);
+
+                return httpUrl + cxfPrefix;
+            } catch (Exception e) {
+                LOG.warn(e.getMessage(), e);
+                return "";
+            }
+        } else {
+            return "";
+        }
     }
 
     protected boolean isFullAddress(String address) {
@@ -110,13 +158,21 @@ public class FabricServerListener implements ServerLifeCycleListener {
             while (path.startsWith("/")) {
                 path = path.substring(1);
             }
+
+            answer =  uri.getScheme() + "://" + uri.getHost() + ":" + port + "/" + path;
+            try {
+                if (InetAddress.getByName(uri.getHost()).isLoopbackAddress()) {
+                    return answer;
+                }
+            } catch (UnknownHostException e) {
+                LOG.warn(e.getMessage());
+                // ignore - fail later when retrieving address from ZK
+            }
             if (curator != null) {
                 String hostname = "${zk:" + containerId + "/ip}";
                 answer =  uri.getScheme() + "://" + hostname + ":" + port + "/" + path;
                 curator.getZookeeperClient().blockUntilConnectedOrTimedOut();
                 answer = ZooKeeperUtils.getSubstitutedData(curator, answer);
-            } else {
-                answer =  uri.getScheme() + "://" + uri.getHost() + ":" + port + "/" + path;
             }
             return answer;
         } catch (InterruptedException e) {
