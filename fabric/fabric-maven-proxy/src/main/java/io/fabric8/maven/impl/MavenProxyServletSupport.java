@@ -293,7 +293,7 @@ public class MavenProxyServletSupport extends HttpServlet implements MavenProxy 
         String id;
         RemoteRepository remoteRepository = null;
         repositoryUrl = repositoryUrl.trim();
-        Authentication authentication = getAuthentication(repositoryUrl);
+        Authentication authentication = getAuthentication(cleanUpRepositorySpec(repositoryUrl));
         if (authentication != null) {
             repositoryUrl = repositoryUrl.replaceFirst(String.format("%s:%s@", authentication.getUsername(), authentication.getPassword()), "");
         }
@@ -322,7 +322,7 @@ public class MavenProxyServletSupport extends HttpServlet implements MavenProxy 
      */
      static Authentication getAuthentication(String repositoryUrl) {
         Authentication authentication = null;
-        try {
+        try {                        
             URL url = new URL(repositoryUrl);
             String authority = url.getUserInfo();
             if (!Strings.isNullOrEmpty(authority)) {
@@ -485,7 +485,21 @@ public class MavenProxyServletSupport extends HttpServlet implements MavenProxy 
         } else if (!spec.contains("@")) {
             return spec;
         } else {
-            return spec.substring(0, spec.indexOf('@'));
+            // Trim any potential pax-url options
+            int indexToTrim = spec.length() - 1;
+            int indexOfId = spec.indexOf("@id");            
+            int indexOfSnapshots = spec.indexOf("@snapshots");
+            int indexOfNoreleases = spec.indexOf("@noreleases");
+            if (indexOfId > 0 && indexOfId < indexToTrim) {
+                indexToTrim = indexOfId;
+            }
+            if (indexOfSnapshots > 0 && indexOfSnapshots < indexToTrim) {
+                indexToTrim = indexOfSnapshots;
+            }
+            if (indexOfNoreleases > 0 && indexOfNoreleases < indexToTrim) {
+                indexToTrim = indexOfNoreleases;
+            } 
+            return spec.substring(0, indexToTrim);
         }
     }
 
