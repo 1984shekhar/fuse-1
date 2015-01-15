@@ -142,9 +142,9 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     private String remoteUrl;
     private String lastFetchWarning;
 
-    @Property(name = "configuredUrl", label = "External Git Repository URL", description = "The URL to a fixed external git repository")
-    private String configuredUrl;
-    @Property(name = "gitPullPeriod", label = "Pull Interval", description = "The interval between pulls", intValue = 1000)
+    @Property(name = GIT_REMOTE_URL, label = "External Git Repository URL", description = "The URL to a fixed external git repository")
+    private String gitRemoteUrl;
+    @Property(name = GIT_PULL_PERIOD, label = "Pull Interval", description = "The interval between pulls", intValue = 1000)
     private long gitPullPeriod = 1000;
 
 
@@ -160,9 +160,9 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
             // [FIXME] Why can we not rely on the injected GitService
             GitService optionalService = gitService.getOptional();
 
-            if (configuredUrl != null) {
-                gitListener.onRemoteUrlChanged(configuredUrl);
-                remoteUrl = configuredUrl;
+            if (gitRemoteUrl != null) {
+                gitListener.onRemoteUrlChanged(gitRemoteUrl);
+                remoteUrl = gitRemoteUrl;
             } else if (optionalService != null) {
                 optionalService.addGitListener(gitListener);
                 remoteUrl = optionalService.getRemoteUrl();
@@ -1395,7 +1395,17 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
 
         @Override
         public void onRemoteUrlChanged(final String updatedUrl) {
-            final String actualUrl = configuredUrl != null ? configuredUrl : updatedUrl;
+
+
+
+
+
+
+
+
+
+
+            final String actualUrl = gitRemoteUrl != null ? gitRemoteUrl : updatedUrl;
             if (isValid()) {
                 threadPool.submit(new Runnable() {
                     @Override
