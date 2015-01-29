@@ -112,6 +112,7 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     public static final String GIT_PULL_PERIOD = "gitPullPeriod";
     public static final String GIT_REMOTE_URL = "gitRemoteUrl";
     public static final String GIT_REMOTE_USER = "gitRemoteUser";
+    public static final String GIT_GC_ON_LOAD = "gitGcOnLoad";
     public static final String GIT_REMOTE_PASSWORD = "gitRemotePassword";
     public static final String[] SUPPORTED_CONFIGURATION = { DATASTORE_TYPE_PROPERTY, GIT_REMOTE_URL, GIT_REMOTE_USER, GIT_REMOTE_PASSWORD, GIT_PULL_PERIOD };
 
@@ -146,7 +147,8 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     private String gitRemoteUrl;
     @Property(name = GIT_PULL_PERIOD, label = "Pull Interval", description = "The interval between pulls", intValue = 1000)
     private long gitPullPeriod = 1000;
-
+    @Property(name = GIT_GC_ON_LOAD, label = "Run Git GC", description = "Whether or not to run Git GC on load of the Git repo", boolValue = false)
+    private boolean gitGcOnLoad = false;
 
     @Override
     protected void activateInternal() {
@@ -185,6 +187,21 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
                     return "TimedPullTask";
                 }
             }, gitPullPeriod, gitPullPeriod, TimeUnit.MILLISECONDS);
+            
+            if (gitGcOnLoad) {
+                gitOperation(new GitOperation<Void>() {
+                    public Void call(Git git, GitContext context) throws Exception {
+                        long before = System.currentTimeMillis();
+                        try {
+                            git.gc().call();
+                            LOG.debug("git gc took " + ((System.currentTimeMillis() - before)) + " ms.");
+                        } catch (GitAPIException e) {
+                            LOG.debug("git gc threw an exception!", e);                    
+                        }
+                        return null;
+                    }
+                });            
+            }
         } catch (Exception ex) {
             throw new FabricException("Failed to start GitDataStore:", ex);
         }
