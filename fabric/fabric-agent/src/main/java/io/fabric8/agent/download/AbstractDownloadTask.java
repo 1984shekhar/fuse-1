@@ -112,8 +112,11 @@ public abstract class AbstractDownloadTask extends DefaultFuture<DownloadFuture>
 
     /**
      * Copy the input stream to the output
+     * Returns false if inputStream is empty, true otherwise
      */
-    static void copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+    static boolean copy(InputStream inputStream, OutputStream outputStream) throws IOException {
+        boolean result = true;
+        boolean firstLoop = true;
         try {
             byte[] buffer = new byte[8192];
             int len;
@@ -121,7 +124,13 @@ public abstract class AbstractDownloadTask extends DefaultFuture<DownloadFuture>
                 len = inputStream.read(buffer);
                 if (len > 0) {
                     outputStream.write(buffer, 0, len);
+                    if(firstLoop){
+                        firstLoop = false;
+                    }
                 } else {
+                    if(firstLoop){
+                        result = false;
+                    }
                     break;
                 }
             }
@@ -135,6 +144,8 @@ public abstract class AbstractDownloadTask extends DefaultFuture<DownloadFuture>
             } catch (IOException e) {
             }
         }
+
+        return result;
     }
 
 }
