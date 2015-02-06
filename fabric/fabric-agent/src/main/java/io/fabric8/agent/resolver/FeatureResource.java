@@ -18,6 +18,7 @@ package io.fabric8.agent.resolver;
 
 import aQute.lib.osgi.Macro;
 import aQute.lib.osgi.Processor;
+
 import org.apache.felix.utils.version.VersionRange;
 import org.apache.felix.utils.version.VersionTable;
 import org.apache.karaf.features.BundleInfo;
@@ -26,18 +27,22 @@ import org.osgi.framework.Version;
 import org.osgi.framework.namespace.IdentityNamespace;
 import org.osgi.resource.Capability;
 import org.osgi.resource.Resource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
 */
 public class FeatureResource extends ResourceImpl {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(FeatureResource.class);
     private final Feature feature;
 
-    public static Resource build(Feature feature, String featureRange, Map<String, Resource> locToRes) {
+    public static Resource build(Feature feature, String featureRange, Map<String, Resource> locToRes, Set<String> overrides) {
         FeatureResource resource = new FeatureResource(feature);
         Map<String, String> dirs = new HashMap<String, String>();
         Map<String, Object> attrs = new HashMap<String, Object>();
@@ -48,7 +53,12 @@ public class FeatureResource extends ResourceImpl {
             if (!info.isDependency()) {
                 Resource res = locToRes.get(info.getLocation());
                 if (res == null) {
-                    throw new IllegalStateException("Resource not found for url " + info.getLocation());
+                    if (overrides.contains(info.getLocation())) {
+                        LOGGER.trace("Overriden resource not found for url " + info.getLocation());
+                        continue;
+                    } else {
+                        throw new IllegalStateException("Resource not found for url " + info.getLocation());
+                    }
                 }
                 List<Capability> caps = res.getCapabilities(IdentityNamespace.IDENTITY_NAMESPACE);
                 if (caps.size() != 1) {

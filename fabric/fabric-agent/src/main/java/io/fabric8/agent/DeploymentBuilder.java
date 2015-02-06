@@ -18,6 +18,7 @@ package io.fabric8.agent;
 
 import aQute.lib.osgi.Macro;
 import aQute.lib.osgi.Processor;
+
 import org.apache.felix.resolver.ResolverImpl;
 import org.apache.felix.utils.version.VersionRange;
 import org.apache.felix.utils.version.VersionTable;
@@ -25,6 +26,7 @@ import org.apache.karaf.features.BundleInfo;
 import org.apache.karaf.features.Feature;
 import org.apache.karaf.features.Repository;
 import org.fusesource.common.util.Manifests;
+
 import io.fabric8.agent.download.DownloadManager;
 import io.fabric8.agent.repository.AggregateRepository;
 import io.fabric8.agent.repository.StaticRepository;
@@ -41,6 +43,7 @@ import io.fabric8.fab.DependencyTree;
 import io.fabric8.fab.osgi.FabBundleInfo;
 import io.fabric8.fab.osgi.FabResolver;
 import io.fabric8.fab.osgi.FabResolverFactory;
+
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.Constants;
@@ -67,6 +70,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
@@ -154,10 +158,20 @@ public class DeploymentBuilder {
         for (String req : reqs) {
             downloadAndBuildResource(REQ_PROTOCOL + req);
         }
+        
+        Set<String> o = new HashSet<String>(overrides);
         for (String override : overrides) {
-            // TODO: ignore download failures for overrides
-            downloadAndBuildResource(extractUrl(override));
+            if (!resources.containsKey(extractUrl(override))) {
+                // TODO: ignore download failures for overrides
+                downloadAndBuildResource(extractUrl(override));               
+            } else {
+                // don't process overrides that are identical to current deployed resources
+                LOGGER.trace("Skipping processing of override " + override + " as it is already deployed.");
+                o.remove(override);
+            }
         }
+        overrides = o;
+        
         for (String optional : optionals) {
             downloadAndBuildResource(optional);
         }
@@ -193,7 +207,7 @@ public class DeploymentBuilder {
         }
         // Build features resources
         for (Feature feature : featuresToRegister) {
-            Resource resource = FeatureResource.build(feature, featureRange, resources);
+            Resource resource = FeatureResource.build(feature, featureRange, resources, overrides);
             resources.put("feature:" + feature.getName() + "/" + feature.getVersion(), resource);
         }
         // Build requirements
