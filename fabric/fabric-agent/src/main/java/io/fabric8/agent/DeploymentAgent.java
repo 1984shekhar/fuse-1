@@ -570,7 +570,25 @@ public class DeploymentAgent implements ManagedService {
         Map<String, StreamProvider> providers = builder.getProviders();
         Map<Resource, List<Wire>> wiring = builder.getWiring();
         install(allResources, ignoredBundles, providers, wiring);
-        installFeatureConfigs(bundleContext, downloadedResources);
+        
+        ServiceReference configAdminServiceReference = null;
+        try {
+            configAdminServiceReference = bundleContext.getServiceReference(ConfigurationAdmin.class.getName());
+        } catch (Exception e) {
+            LOGGER.warn("Could not get reference to config admin service.", e);
+        }
+        if (configAdminServiceReference != null) {
+            ConfigurationAdmin configAdmin = (ConfigurationAdmin) bundleContext.getService(configAdminServiceReference);
+            for (FeatureResource resource : filterFeatureResources(downloadedResources)) {
+                Map<String, Map<String, String>> configs = resource.getFeature().getConfigurations();
+                for (Map.Entry<String, Map<String, String>> entry : configs.entrySet()) {
+                    String pid = entry.getKey();
+                    if (!isConfigurationManaged(configAdmin, pid)) {
+                        applyConfiguration(configAdmin, pid, entry.getValue());
+                    }
+                }
+            }
+        }
         return true;
     }
 
