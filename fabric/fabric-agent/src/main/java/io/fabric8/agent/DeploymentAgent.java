@@ -852,7 +852,11 @@ public class DeploymentAgent implements ManagedService {
                 }
             }
         }
-        systemBundleContext.getBundle().adapt(FrameworkWiring.class).resolveBundles(toResolve);
+        // Do not resolve all bundles at once to avoid OOM
+        FrameworkWiring frameworkWiring = systemBundleContext.getBundle().adapt(FrameworkWiring.class);
+        for (Bundle bundle : toResolve) {
+            frameworkWiring.resolveBundles(Collections.singleton(bundle));
+        }
 
         List<Resource> resourcesWithUrlHandlers = new ArrayList<Resource>();
         for (Resource resource : allResources) {
