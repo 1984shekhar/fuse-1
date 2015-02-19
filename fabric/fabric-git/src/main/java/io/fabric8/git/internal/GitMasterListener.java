@@ -17,6 +17,7 @@ import io.fabric8.groups.GroupListener;
 import io.fabric8.groups.internal.ZooKeeperGroup;
 import io.fabric8.utils.Closeables;
 import io.fabric8.zookeeper.ZkPath;
+import org.eclipse.jgit.transport.URIish;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,7 @@ public final class GitMasterListener extends AbstractComponent implements GroupL
                     LOGGER.warn("Could not render git master URL {}.", masterUrl);
                 }
                 //Catch any possible issue indicating that the URL is invalid.
-                URL url = new URL(substitutedUrl);
+                URIish uri = new URIish(substitutedUrl);
                 gitservice.notifyRemoteChanged(substitutedUrl);
             }
         } catch (Exception e) {

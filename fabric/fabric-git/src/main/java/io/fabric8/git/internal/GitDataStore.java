@@ -111,10 +111,12 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
 
     public static final String GIT_PULL_PERIOD = "gitPullPeriod";
     public static final String GIT_REMOTE_URL = "gitRemoteUrl";
+    public static final String GIT_EXTERNAL_URL = "gitExternalUrl";
+
     public static final String GIT_REMOTE_USER = "gitRemoteUser";
     public static final String GIT_GC_ON_LOAD = "gitGcOnLoad";
     public static final String GIT_REMOTE_PASSWORD = "gitRemotePassword";
-    public static final String[] SUPPORTED_CONFIGURATION = { DATASTORE_TYPE_PROPERTY, GIT_REMOTE_URL, GIT_REMOTE_USER, GIT_REMOTE_PASSWORD, GIT_PULL_PERIOD };
+    public static final String[] SUPPORTED_CONFIGURATION = { DATASTORE_TYPE_PROPERTY, GIT_REMOTE_URL, GIT_REMOTE_USER, GIT_REMOTE_PASSWORD, GIT_PULL_PERIOD, GIT_EXTERNAL_URL };
 
     public static final String CONFIGS = CONFIG_ROOT_DIR;
     public static final String CONFIGS_PROFILES = CONFIGS + File.separator + "profiles";
@@ -143,8 +145,10 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     private String remoteUrl;
     private String lastFetchWarning;
 
-    @Property(name = GIT_REMOTE_URL, label = "External Git Repository URL", description = "The URL to a fixed external git repository")
+    //removed as property
     private String gitRemoteUrl;
+    @Property(name = GIT_EXTERNAL_URL, label = "External Git Repository URL", description = "The URL to a fixed external git repository")
+    private String gitExternalUrl;
     @Property(name = GIT_PULL_PERIOD, label = "Pull Interval", description = "The interval between pulls", intValue = 1000)
     private long gitPullPeriod = 1000;
     @Property(name = GIT_GC_ON_LOAD, label = "Run Git GC", description = "Whether or not to run Git GC on load of the Git repo", boolValue = false)
@@ -162,9 +166,9 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
             // [FIXME] Why can we not rely on the injected GitService
             GitService optionalService = gitService.getOptional();
 
-            if (gitRemoteUrl != null) {
-                gitListener.onRemoteUrlChanged(gitRemoteUrl);
-                remoteUrl = gitRemoteUrl;
+            if (gitExternalUrl != null) {
+                gitListener.onRemoteUrlChanged(gitExternalUrl);
+                remoteUrl = gitExternalUrl;
             } else if (optionalService != null) {
                 optionalService.addGitListener(gitListener);
                 remoteUrl = optionalService.getRemoteUrl();
@@ -1413,16 +1417,14 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
         @Override
         public void onRemoteUrlChanged(final String updatedUrl) {
 
+            final String actualUrl ;
 
+            if(gitExternalUrl != null){
+                actualUrl = gitExternalUrl;
+            } else {
+                actualUrl = gitRemoteUrl != null ? gitRemoteUrl : updatedUrl;
+            }
 
-
-
-
-
-
-
-
-            final String actualUrl = gitRemoteUrl != null ? gitRemoteUrl : updatedUrl;
             if (isValid()) {
                 threadPool.submit(new Runnable() {
                     @Override
