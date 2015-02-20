@@ -103,9 +103,14 @@ public class MavenDownloadTask extends AbstractDownloadTask implements Runnable 
                 }
                 File tmp = File.createTempFile("fabric-agent-", null, file.getParentFile());
                 OutputStream os = new FileOutputStream(tmp);
-                copy(is, os);
+                boolean notEmpty = copy(is, os);
                 is.close();
                 os.close();
+                if(!notEmpty){
+                    LOG.warn("Downloaded a zero bytes file: [" + artifact.getArtifactURL() +"]");
+                    tmp.delete();
+                    throw new IOException("Downloaded an empty file. [" + artifact.getArtifactURL() + "]");
+                }
                 if (file.exists() && !file.delete()) {
                     throw new IOException("Unable to delete file: " + file.toString());
                 }
