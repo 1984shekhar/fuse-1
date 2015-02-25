@@ -67,8 +67,8 @@ public class FabricServerListener implements ServerLifeCycleListener {
         }
         if (!exists) {
             services.add(address);
+            group.update(createState());
         }
-        group.update(createState());
     }
 
     public void stopServer(Server server) {
