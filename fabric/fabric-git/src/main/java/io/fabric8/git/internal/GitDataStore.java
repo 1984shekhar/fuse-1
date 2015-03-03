@@ -76,6 +76,7 @@ import org.eclipse.jgit.api.MergeResult;
 import org.eclipse.jgit.api.errors.CannotDeleteCurrentBranchException;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.internal.storage.file.LockFile;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.PersonIdent;
@@ -154,6 +155,7 @@ public class GitDataStore extends AbstractDataStore<GitDataStore> {
     protected void activateInternal() {
         try {
             super.activateInternal();
+            LockFile.unlock(getGit().getRepository().getIndexFile());
 
             delegate = ProxySelector.getDefault();
             LOG.info("Setting up delegate ProxySelector: {}", delegate);

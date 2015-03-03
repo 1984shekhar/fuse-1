@@ -49,6 +49,7 @@ import org.apache.felix.scr.annotations.References;
 import org.apache.felix.scr.annotations.Service;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.internal.storage.file.LockFile;
 import org.gitective.core.CommitUtils;
 
 import com.google.common.cache.CacheBuilder;
@@ -100,6 +101,7 @@ public final class CachingGitDataStore extends GitDataStore {
     public void activate(Map<String, ?> configuration) throws Exception {
         configurer.configure(configuration, this);
         protectedActivate(configuration);
+        LockFile.unlock(getGit().getRepository().getIndexFile());
     }
 
     @Deactivate
