@@ -17,6 +17,8 @@
 
 package io.fabric8.git.http;
 
+import io.fabric8.api.Constants;
+import io.fabric8.git.internal.GitDataStore;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.felix.scr.annotations.Activate;
 import org.apache.felix.scr.annotations.Component;
@@ -226,6 +228,22 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         }
     }
 
+    private String readExternalGitUrl() {
+        String result = null;
+        try {
+            Configuration conf = configAdmin.get().getConfiguration(Constants.DATASTORE_TYPE_PID);
+            if (conf == null) {
+                LOGGER.warn("No configuration for pid " + Constants.DATASTORE_TYPE_PID);
+            } else {
+                Object o = conf.getProperties().get(GitDataStore.GIT_EXTERNAL_URL);
+                result = o != null ? o.toString() : null;
+            }
+        } catch (Throwable e) {
+            LOGGER.error("Could not load config admin for pid " + Constants.DATASTORE_TYPE_PID + ". Reason: " + e, e);
+        }
+        return result;
+    }
+
     private GitNode createState() {
         RuntimeProperties sysprops = runtimeProperties.get();
         TargetContainer runtimeType = TargetContainer.getTargetContainer(sysprops);
@@ -235,7 +253,12 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         GitNode state = new GitNode();
         state.setId("fabric-repo");
         if (group != null && group.isMaster()) {
-            state.setUrl(fabricRepoUrl);
+            String externalGitUrl = readExternalGitUrl();
+            if( externalGitUrl!= null){
+                state.setUrl( externalGitUrl);
+            } else {
+                state.setUrl(fabricRepoUrl);
+            }
         }
         return state;
     }
