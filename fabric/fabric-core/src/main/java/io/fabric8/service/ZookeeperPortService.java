@@ -107,9 +107,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         String ipPortsPath = ZkPath.PORTS_IP.getPath(container.getIp());
         Lease lease = null;
         try {
-            if(existingLease!=null){
+            if (existingLease != null) {
                 lease = existingLease;
-            }else{
+            } else {
                 lease = interProcessLock.acquire(60, TimeUnit.SECONDS);
             }
             if (lease != null) {
@@ -127,7 +127,7 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
-            if(existingLease == null) {
+            if (existingLease == null) {
                 releaseLock(lease);
             }
         }
@@ -136,7 +136,16 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
 
     @Override
     public void registerPort(Container container, String pid, String key, int port) {
-        registerPort(container, pid, key, port, null);
+        registerPort(container, pid, key, port, (Lock)null);
+    }
+
+    @Override
+    public void registerPort(Container container, String pid, String key, int port, Lock lock) {
+        Lease lease = null;
+        if (lock != null && lock instanceof LeaseLock) {
+            lease = ((LeaseLock)lock).getLease();
+        }
+        registerPort(container, pid, key, port, lease);
     }
 
     private void unregisterPort(Container container, String pid, String key, Lease existingLease) {
@@ -186,7 +195,6 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
     @Override
     public void unregisterPort(Container container, String pid, String key) {
         unregisterPort(container, pid, key, (Lease)null);
-
     }
 
     private void unregisterPort(Container container, String pid, Lease existingLease) {
@@ -296,6 +304,18 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         return ports;
     }
 
+    @Override
+    public Lock acquirePortLock() throws Exception {
+        return new LeaseLock(interProcessLock.acquire(60, TimeUnit.SECONDS));
+    }
+
+    @Override
+    public void releasePortLock(Lock lock) {
+        if (lock instanceof LeaseLock) {
+            interProcessLock.returnLease(((LeaseLock)lock).getLease());
+        }
+    }
+
     private Set<Integer> findUsedPortByHost(Container container, Lease existingLease) {
         assertValid();
         String ip = container.getIp();
@@ -303,9 +323,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         String path = ZkPath.PORTS_IP.getPath(ip);
         Lease lease = null;
         try {
-            if(existingLease != null){
+            if (existingLease != null) {
                 lease = existingLease;
-            } else{
+            } else {
                 lease = interProcessLock.acquire(60, TimeUnit.SECONDS);
             }
             if (lease != null) {
@@ -326,7 +346,7 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
-            if(existingLease == null) {
+            if (existingLease == null) {
                 releaseLock(lease);
             }
         }
@@ -335,7 +355,16 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
 
     @Override
     public Set<Integer> findUsedPortByHost(Container container) {
-        return findUsedPortByHost(container, null);
+        return findUsedPortByHost(container, (Lock)null);
+    }
+
+    @Override
+    public Set<Integer> findUsedPortByHost(Container container, Lock lock) {
+        Lease lease = null;
+        if (lock != null && lock instanceof LeaseLock) {
+            lease = ((LeaseLock)lock).getLease();
+        }
+        return findUsedPortByHost(container, lease);
     }
 
     private void releaseLock(Lease lease) {
@@ -354,6 +383,18 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
 
     void unbindCurator(CuratorFramework curator) {
         this.curator.unbind(curator);
+    }
+
+    private class LeaseLock implements Lock {
+        private Lease lease;
+
+        public LeaseLock(Lease lease) {
+            this.lease = lease;
+        }
+
+        public Lease getLease() {
+            return lease;
+        }
     }
 
 }
