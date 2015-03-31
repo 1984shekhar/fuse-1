@@ -225,7 +225,7 @@ public class ProfileEdit extends FabricCommand {
             } else {
                 System.out.println("Adding feature:" + feature + " to profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, FEATURE_PREFIX + feature.replace('/', '_'), feature, set, delete);
+            updateConfig(conf, FEATURE_PREFIX + feature, feature, set, delete);
             profile.setConfiguration(Constants.AGENT_PID, conf);
         }
     }
@@ -243,7 +243,7 @@ public class ProfileEdit extends FabricCommand {
             } else if (delete) {
                 System.out.println("Deleting feature repository:" + repositoryURI + " from profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, REPOSITORY_PREFIX + repositoryURI.replace('/', '_'), repositoryURI, set, delete);
+            updateConfig(conf, REPOSITORY_PREFIX + repositoryURI, repositoryURI, set, delete);
         }
         profile.setConfiguration(Constants.AGENT_PID, conf);
     }
@@ -263,7 +263,7 @@ public class ProfileEdit extends FabricCommand {
             } else if (delete) {
                 System.out.println("Deleting "+libType+":" + lib + " from profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, libPrefix + lib.replace('/', '_'), lib, set, delete);
+            updateConfig(conf, libPrefix + lib, lib, set, delete);
         }
         profile.setConfiguration(Constants.AGENT_PID, conf);
     }
@@ -281,7 +281,7 @@ public class ProfileEdit extends FabricCommand {
             } else if (delete) {
                 System.out.println("Deleting bundle:" + bundle + " from profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, BUNDLE_PREFIX + bundle.replace('/', '_'), bundle, set, delete);
+            updateConfig(conf, BUNDLE_PREFIX + bundle, bundle, set, delete);
         }
         profile.setConfiguration(Constants.AGENT_PID, conf);
     }
@@ -299,7 +299,7 @@ public class ProfileEdit extends FabricCommand {
             } else if (delete) {
                 System.out.println("Deleting FAB:" + fab + " from profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, FAB_PREFIX + fab.replace('/', '_'), fab, set, delete);
+            updateConfig(conf, FAB_PREFIX + fab, fab, set, delete);
         }
         profile.setConfiguration(Constants.AGENT_PID, conf);
     }
@@ -317,7 +317,7 @@ public class ProfileEdit extends FabricCommand {
             } else if (delete) {
                 System.out.println("Deleting override:" + overrie + " from profile:" + profile.getId() + " version:" + profile.getVersion());
             }
-            updateConfig(conf, OVERRIDE_PREFIX + overrie.replace('/', '_'), overrie, set, delete);
+            updateConfig(conf, OVERRIDE_PREFIX + overrie, overrie, set, delete);
         }
         profile.setConfiguration(Constants.AGENT_PID, conf);
     }
