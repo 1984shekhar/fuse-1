@@ -24,6 +24,7 @@ import org.osgi.service.http.HttpContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.jolokia.config.ConfigKey;
 import javax.security.auth.Subject;
 import javax.security.auth.callback.*;
 import javax.security.auth.login.AccountException;
@@ -46,14 +47,11 @@ public class JolokiaSecureHttpContext implements HttpContext {
     private static final String AUTHENTICATION_SCHEME_BASIC = "Basic";
 
     private final String realm;
-    private final String role;
+    private final String[] roles;
 
-    /**
-     * Constructor
-     */
-    public JolokiaSecureHttpContext(String realm, String role) {
+    JolokiaSecureHttpContext(String realm, String[] role) {
         this.realm = realm;
-        this.role = role;
+        this.roles = role;
 
     }
 
@@ -67,12 +65,13 @@ public class JolokiaSecureHttpContext implements HttpContext {
         return null;
     }
 
+    @Override
     public boolean handleSecurity(HttpServletRequest request, HttpServletResponse response) {
         return authenticate(request, response);
     }
 
 
-    public Subject doAuthenticate(final String username, final String password) {
+    private Subject doAuthenticate(final String username, final String password) {
         try {
             Subject subject = new Subject();
             LoginContext loginContext = new LoginContext(realm, subject, new CallbackHandler() {
@@ -89,26 +88,28 @@ public class JolokiaSecureHttpContext implements HttpContext {
                 }
             });
             loginContext.login();
-            if (role != null && role.length() > 0) {
-                String clazz = "org.apache.karaf.jaas.boot.principal.RolePrincipal";
-                String name = role;
-                int idx = role.indexOf(':');
-                if (idx > 0) {
-                    clazz = role.substring(0, idx);
-                    name = role.substring(idx + 1);
-                }
-                boolean found = false;
-                for (Principal p : subject.getPrincipals()) {
-                    if (p.getClass().getName().equals(clazz)
-                            && p.getName().equals(name)) {
-                        found = true;
-                        break;
+            boolean found = false;
+            for (String role : roles) {
+                if (role != null && role.length() > 0 && !found) {
+                    String roleName = role;
+                    int idx = roleName.indexOf(':');
+                    if (idx > 0) {
+                        roleName = roleName.substring(idx + 1);
                     }
-                }
-                if (!found) {
-                    throw new FailedLoginException("User does not have the required role " + role);
+                    
+                    for (Principal p : subject.getPrincipals()) {
+                        if (p.getName().equals(roleName)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
                 }
             }
+            if (!found) {
+                throw new FailedLoginException("User does not have the required role " + roles);
+            }
+
             return subject;
         } catch (AccountException e) {
             LOGGER.warn("Account failure", e);
@@ -150,6 +151,7 @@ public class JolokiaSecureHttpContext implements HttpContext {
                             // as per the spec, set attributes
                             request.setAttribute(HttpContext.AUTHENTICATION_TYPE, HttpServletRequest.BASIC_AUTH);
                             request.setAttribute(HttpContext.REMOTE_USER, username);
+                            request.setAttribute(ConfigKey.JAAS_SUBJECT_REQUEST_ATTRIBUTE, subject);
                             // succeed
                             return true;
                         }
@@ -183,8 +185,8 @@ public class JolokiaSecureHttpContext implements HttpContext {
         return realm;
     }
 
-    public String getRole() {
-        return role;
+    public String[] getRole() {
+        return roles;
     }
 
     public String toString() {
