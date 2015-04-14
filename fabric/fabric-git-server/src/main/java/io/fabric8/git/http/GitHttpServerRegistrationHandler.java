@@ -1,6 +1,5 @@
-/*
- * Copyright (C) FuseSource, Inc.
- *   http://fusesource.com
+/**
+ *  Copyright 2005-2014 Red Hat, Inc.
  *
  *   Licensed under the Apache License, Version 2.0 (the "License");
  *   you may not use this file except in compliance with the License.
@@ -55,6 +54,7 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 @ThreadSafe
@@ -91,20 +91,18 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
     //Reference not used, but it expresses the dependency on a fully initialized fabric.
     @Reference
     private FabricService fabricService;
-
+    private final AtomicBoolean isMaster = new AtomicBoolean();
     private volatile Group<GitNode> group;
     private volatile String gitRemoteUrl;
+    private String realm;
+    private String role;
 
     @Activate
     void activate(Map<String, ?> configuration) {
-
         RuntimeProperties sysprops = runtimeProperties.get();
-        String realm = getConfiguredRealm(sysprops, configuration);
-        String role = getConfiguredRole(sysprops, configuration);
-        registerServlet(sysprops, realm, role);
-
+        realm = getConfiguredRealm(sysprops, configuration);
+        role = getConfiguredRole(sysprops, configuration);
         activateComponent();
-
         group = new ZooKeeperGroup<GitNode>(curator.get(), ZkPath.GIT.getPath(), GitNode.class);
         group.add(this);
         group.update(createState());
@@ -152,12 +150,19 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
     }
 
     private void updateMasterUrl(Group<GitNode> group) {
-        if (group.isMaster()) {
-            LOGGER.debug("Git repo is the master");
-        } else {
-            LOGGER.debug("Git repo is not the master");
-        }
         try {
+            if (group.isMaster()) {
+                LOGGER.debug("Git repo is the master");
+                if (!isMaster.getAndSet(true)) {
+                    registerServlet(runtimeProperties.get(), realm, role);
+                }
+            } else {
+                LOGGER.debug("Git repo is not the master");
+                if (isMaster.getAndSet(false)) {
+                    unregisterServlet();
+                }
+            }
+            
             GitNode state = createState();
             group.update(state);
             String url = state.getUrl();
