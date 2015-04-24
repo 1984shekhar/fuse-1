@@ -51,6 +51,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
+import io.fabric8.zookeeper.utils.ZooKeeperUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
@@ -385,7 +386,15 @@ public final class ZooKeeperClusterServiceImpl extends AbstractComponent impleme
         FabricService fabric = fabricService.get();
         Container container = fabric.getContainer(containerName);
 
-        ContainerTemplate containerTemplate = new ContainerTemplate(container, fabric.getZooKeeperUser(), fabric.getZookeeperPassword(), false);
+        String user = ZooKeeperUtils.getContainerLogin(runtimeProperties.get());
+        String password = "";
+        try {
+            Properties containerTokens = ZooKeeperUtils.getContainerTokens(curator.get());
+            password = containerTokens.getProperty(user);
+        } catch (Exception e) {
+            LOGGER.error("Unable to get temp ZK user/pass for administrative purposes", e);
+        }
+        ContainerTemplate containerTemplate = new ContainerTemplate(container, user, password, false);
         return containerTemplate.execute(new JmxTemplateSupport.JmxConnectorCallback<String>() {
             @Override
             public String doWithJmxConnector(JMXConnector connector) throws Exception {
