@@ -34,6 +34,7 @@ import io.fabric8.utils.shell.ShellUtils;
 import io.fabric8.zookeeper.ZkDefs;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -176,6 +177,12 @@ public class MQCreate extends FabricCommand {
         dto.setNetworksPassword(networksPassword);
         dto.setNetworksUserName(networksUserName);
         dto.setParentProfile(parentProfile);
+        if (!isBindAddressAvail(properties)) {
+            if (properties == null) {
+                properties = new ArrayList<String>();
+            }
+            properties.add("bind.address=0.0.0.0");
+        } 
         dto.setProperties(properties);
         dto.setVersion(version);
         dto.setMinimumInstances(minimumInstances);
@@ -186,6 +193,18 @@ public class MQCreate extends FabricCommand {
         return dto;
     }
 
+    private boolean  isBindAddressAvail(List<String> properties) {
+        if (properties != null) {
+            for (String entry : properties) {
+                String[] parts = entry.split("=", 2);
+                if (parts[0].equals("bind.address")) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
     private void promptForJmxCredentialsIfNeeded() throws IOException {
         // If the username was not configured via cli, then prompt the user for the values
         if (username == null) {
