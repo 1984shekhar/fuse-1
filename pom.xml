@@ -577,6 +577,11 @@
                 <artifactId>commons-beanutils</artifactId>
                 <version>${commons-beanutils-version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.apache.servicemix.bundles</groupId>
+                <artifactId>org.apache.servicemix.bundles.commons-io</artifactId>
+                <version>${commons-io-version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>javax.servlet</groupId>
