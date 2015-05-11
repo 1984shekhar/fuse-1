@@ -1,13 +1,13 @@
 /**
  * Copyright (C) FuseSource, Inc.
  * http://fusesource.com
- *
+ * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p/>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p/>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,11 +23,13 @@ import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getChildren;
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.getStringData;
 import static io.fabric8.zookeeper.utils.ZooKeeperUtils.setData;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.UnhandledErrorListener;
 import org.apache.curator.framework.recipes.locks.InterProcessSemaphoreV2;
 import org.apache.curator.framework.recipes.locks.Lease;
 import org.apache.felix.scr.annotations.Activate;
@@ -90,9 +92,12 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
                     }
                 }
             } else {
-                throw new FabricException("Could not acquire port lock");
+                throw new FabricException("Could not acquire port lock for pid " + pid);
             }
-            throw new FabricException("Could not find port within range [" + fromPort + "," + toPort + "]");
+            throw new FabricException("Could not find port within range [" + fromPort + "," + toPort + "] for pid " + pid);
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
@@ -122,8 +127,11 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
                     setData(curator.get(), ipPortsPath, existingPorts + " " + portAsString);
                 }
             } else {
-                throw new FabricException("Could not acquire port lock");
+                throw new FabricException("Could not acquire port lock for pid " + pid);
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
@@ -154,9 +162,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         String ipPortsPath = ZkPath.PORTS_IP.getPath(container.getIp());
         Lease lease = null;
         try {
-            if(existingLease != null){
+            if (existingLease != null) {
                 lease = existingLease;
-            }else{
+            } else {
                 lease = interProcessLock.acquire(60, TimeUnit.SECONDS);
             }
 
@@ -180,12 +188,15 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
                     setData(curator.get(), ipPortsPath, sb.toString());
                 }
             } else {
-                throw new FabricException("Could not acquire port lock");
+                throw new FabricException("Could not acquire port lock for pid " + pid);
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
-            if(existingLease == null) {
+            if (existingLease == null) {
                 releaseLock(lease);
             }
         }
@@ -202,9 +213,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
         String containerPortsPidPath = ZkPath.PORTS_CONTAINER_PID.getPath(container.getId(), pid);
         Lease lease = null;
         try {
-            if(existingLease != null){
+            if (existingLease != null) {
                 lease = existingLease;
-            }else{
+            } else {
                 lease = interProcessLock.acquire(60, TimeUnit.SECONDS);
             }
 
@@ -216,12 +227,15 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
                     deleteSafe(curator.get(), containerPortsPidPath);
                 }
             } else {
-                throw new FabricException("Could not acquire port lock");
+                throw new FabricException("Could not acquire port lock for pid " + pid);
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
-            if(existingLease == null) {
+            if (existingLease == null) {
                 releaseLock(lease);
             }
         }
@@ -229,7 +243,7 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
 
     @Override
     public void unregisterPort(Container container, String pid) {
-        unregisterPort(container, pid, (Lease)null);
+        unregisterPort(container, pid, (Lease) null);
     }
 
     @Override
@@ -249,6 +263,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
             } else {
                 throw new FabricException("Could not acquire port lock");
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
@@ -265,6 +282,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
             if (exists(curator.get(), path) != null) {
                 port = Integer.parseInt(getStringData(curator.get(), path));
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         }
@@ -296,6 +316,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
             } else {
                 throw new FabricException("Could not acquire port lock");
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
@@ -343,6 +366,9 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
             } else {
                 throw new FabricException("Could not acquire port lock");
             }
+        } catch (InterruptedException ex) {
+            cleanUpDirtyZKNodes(interProcessLock);
+            throw FabricException.launderThrowable(ex);
         } catch (Exception ex) {
             throw FabricException.launderThrowable(ex);
         } finally {
@@ -374,6 +400,24 @@ public final class ZookeeperPortService extends AbstractComponent implements Por
             }
         } catch (Exception e) {
             LOGGER.debug("Couldn't realease lock for " + ZkPath.PORTS_LOCK.getPath(), e);
+        }
+    }
+
+    private void cleanUpDirtyZKNodes(InterProcessSemaphoreV2 interProcessLock) {
+        if (interProcessLock != null) {
+            try {
+                LOGGER.info("Cleaning eventual partial nodes");
+                Collection<String> participantNodes = interProcessLock.getParticipantNodes();
+                for (String nodePath : participantNodes) {
+                    String path =  "/fabric/registry/ports/lock/leases/" + nodePath;
+                    LOGGER.debug("Remove dirty zk lock node: {}", path);
+                    deleteSafe(curator.get(), path);
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error while cleaning zk partial nodes", e);
+            }
+        } else {
+            LOGGER.info("No registerPort leftovers nodes found");
         }
     }
 
