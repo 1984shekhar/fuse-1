@@ -304,16 +304,30 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
                     }
                   } else if (event.equals(GroupEvent.DISCONNECTED)) {
                     info("Disconnected from the group", name)
-                    discoveryAgent.setServices(Array[String]())
-                    pool_enabled = false
+                    disconnect
                   }
                 }
               })
               info("Broker %s is waiting to become the master", name)
               update_pool_state()
             }
+          } else {
+            info("Lost zookeeper service for broker %s", name)
+            disconnect
           }
         }
+      }
+    }
+
+    def disconnect = {
+      if (started.compareAndSet(true, false)) {
+        return_pool(ClusteredConfiguration.this)
+        info("Stopping the broker %s.", name)
+        stop()
+      } else {
+        info("Disconnecting the broker %s.", name)
+        discoveryAgent.setServices(Array[String]())
+        pool_enabled = false
       }
     }
 
@@ -604,6 +618,7 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
 
 
   def addingService(reference: ServiceReference[CuratorFramework]): CuratorFramework = {
+    info("Adding curator service")
     val curator = bundleContext.getService(reference)
     boundCuratorRefs.add( reference )
     java.util.Collections.sort( boundCuratorRefs )
@@ -616,9 +631,11 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
   }
 
   def modifiedService(reference: ServiceReference[CuratorFramework], service: CuratorFramework) = {
+    info("Modified curator service")
   }
 
   def removedService(reference: ServiceReference[CuratorFramework], service: CuratorFramework) = {
+    info("Removed curator service")
     boundCuratorRefs.remove( reference )
     if( boundCuratorRefs.isEmpty )
       bindCurator( null )
