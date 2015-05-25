@@ -20,6 +20,7 @@ import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.CompleterValues;
 import org.apache.felix.gogo.commands.Option;
+
 import io.fabric8.api.CreateChildContainerOptions;
 import io.fabric8.api.CreateContainerBasicOptions;
 import io.fabric8.api.CreateContainerMetadata;
@@ -35,6 +36,7 @@ import io.fabric8.zookeeper.ZkDefs;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -56,8 +58,8 @@ public class MQCreate extends FabricCommand {
     @Option(name = "--client-parent-profile", description = "The parent profile used for the client-profile for clients connecting to the broker group. Defaults to 'default'")
     protected String clientParentProfile;
 
-    @Option(name = "--property", aliases = {"-D"}, description = "Additional properties to define in the profile")
-    List<String> properties;
+    @Option(name = "--property", aliases = {"-D"},  multiValued = true, description = "Additional properties to define in the profile")
+    protected String[] properties;
 
     @Option(name = "--config", description = "Configuration to use")
     protected String config;
@@ -177,13 +179,16 @@ public class MQCreate extends FabricCommand {
         dto.setNetworksPassword(networksPassword);
         dto.setNetworksUserName(networksUserName);
         dto.setParentProfile(parentProfile);
-        if (!isBindAddressAvail(properties)) {
-            if (properties == null) {
-                properties = new ArrayList<String>();
-            }
-            properties.add("bind.address=0.0.0.0");
+        
+        // TODO check if we should be able to use a List for multivalue org.apache.felix.gogo.commands.Option fields 
+        List<String> propList = new ArrayList<String>();
+        if (properties != null) {
+            propList.addAll(Arrays.asList(properties));
+        }
+        if (!isBindAddressAvail(propList)) {
+            propList.add("bind.address=0.0.0.0");
         } 
-        dto.setProperties(properties);
+        dto.setProperties(propList);
         dto.setVersion(version);
         dto.setMinimumInstances(minimumInstances);
         dto.setReplicas(replicas);
