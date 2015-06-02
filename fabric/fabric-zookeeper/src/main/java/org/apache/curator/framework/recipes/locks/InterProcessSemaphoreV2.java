@@ -76,10 +76,6 @@ import java.util.concurrent.TimeUnit;
  */
 public class InterProcessSemaphoreV2
 {
-    static{
-        System.out.println("PAOLO - LOADED MY CLASS ------------------------------------------");
-    }
-
     private final Logger log = LoggerFactory.getLogger(getClass());
     private final InterProcessMutex lock;
     private final CuratorFramework client;
