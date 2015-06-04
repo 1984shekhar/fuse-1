@@ -326,8 +326,9 @@ class ActiveMQServiceFactory(bundleContext: BundleContext) extends ManagedServic
         stop()
       } else {
         info("Disconnecting the broker %s.", name)
-        discoveryAgent.setServices(Array[String]())
         pool_enabled = false
+        return_pool(this)
+        discoveryAgent.setServices(Array[String]())
       }
     }
 

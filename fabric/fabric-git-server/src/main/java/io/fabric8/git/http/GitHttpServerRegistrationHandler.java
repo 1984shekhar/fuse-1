@@ -162,7 +162,7 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
                     unregisterServlet();
                 }
             }
-            
+
             GitNode state = createState();
             group.update(state);
             String url = state.getUrl();
@@ -208,7 +208,11 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
     }
 
     private void unregisterServlet() {
-       httpService.get().unregister("/git");
+       try {
+           httpService.get().unregister("/git");
+       } catch (Exception e) {
+           // ignore
+       }
     }
 
     private void updateConfigAdmin() {
@@ -255,8 +259,7 @@ public final class GitHttpServerRegistrationHandler extends AbstractComponent im
         String context = runtimeType == TargetContainer.KARAF ? "" : "/fabric";
         String karafName = sysprops.getProperty(SystemProperties.KARAF_NAME);
         String fabricRepoUrl = "${zk:" + karafName + "/http}" + context + "/git/fabric/";
-        GitNode state = new GitNode();
-        state.setId("fabric-repo");
+        GitNode state = new GitNode("fabric-repo", karafName);
         if (group != null && group.isMaster()) {
             String externalGitUrl = readExternalGitUrl();
             if( externalGitUrl!= null){
