@@ -54,12 +54,6 @@ public class Import extends FabricCommand {
     @Option(name="-rf", aliases={"--reverse-regex"}, description="Specifies a regular expression that matches the znode paths you want to exclude from the import. For multiple exclude expressions, specify this option multiple times. The regular expression syntax is defined by the java.util.regex package.", multiValued=true)
     protected String[] nregex;
 
-    @Option(name="-p", aliases={"--profile"}, multiValued = true, description="Import the specified profile")
-    String[] profiles;
-
-    @Option(name="--version", multiValued = true, description="Import the specified version")
-    String[] versions;
-
     @Option(name="--dry-run", description="Log the actions that would be performed during an import, but do not actually perform the import.")
     boolean dryRun = false;
 
@@ -68,8 +62,8 @@ public class Import extends FabricCommand {
 
     protected void doExecute(CuratorFramework zk) throws Exception {
 
-        nregex = merge(ignore, nregex, null, null);
-        regex = merge(include, regex, versions, profiles);
+        nregex = merge(ignore, nregex);
+        regex = merge(include, regex);
 
         if (properties == true) {
             filesystem = false;

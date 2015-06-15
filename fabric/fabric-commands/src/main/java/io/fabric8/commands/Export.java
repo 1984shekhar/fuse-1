@@ -21,7 +21,6 @@ import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
 import org.apache.felix.gogo.commands.Option;
 import io.fabric8.boot.commands.support.FabricCommand;
-import io.fabric8.zookeeper.utils.RegexSupport;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -50,12 +49,6 @@ public class Export extends FabricCommand {
     @Option(name="-rf", aliases={"--reverse-regex"}, description="Specifies a regular expression that matches the znode paths you want to exclude from the export. For multiple exclude expressions, specify this option multiple times. The regular expression syntax is defined by the java.util.regex package.", multiValued=true)
     String nregex[];
 
-    @Option(name="-p", aliases={"--profile"}, multiValued = true, description="Export the specified profile")
-    String[] profiles;
-
-    @Option(name="-v", aliases={"--version"}, multiValued = true, description="Export the specified version")
-    String[] versions;
-
     @Option(name="-p", aliases={"--path"}, description="Top level znode to export")
     String topLevel = "/";
 
@@ -72,8 +65,8 @@ public class Export extends FabricCommand {
     File include = new File(".fabricinclude");
 
     protected void doExecute(CuratorFramework curator) throws Exception {
-        nregex = merge(ignore, nregex, null, null);
-        regex = merge(include, regex, versions, profiles);
+        nregex = merge(ignore, nregex);
+        regex = merge(include, regex);
         export(curator, topLevel);
     }
 
@@ -90,16 +83,14 @@ public class Export extends FabricCommand {
     }
 
     protected void export(CuratorFramework curator, String path) throws Exception {
-        if (!path.endsWith("/")) {
-            path = path + "/";
+        if (path.length() > 1 && path.endsWith("/")) {
+            path = path.substring(0, path.length()-1);
         }
         if (!path.startsWith("/")) {
             path = "/" + path;
         }
         List<Pattern> include = getPatterns(regex);
         List<Pattern> exclude = getPatterns(nregex);
-        List<Pattern> profile = getPatterns(new String[]{RegexSupport.PROFILE_REGEX});
-        List<Pattern> containerProperties = getPatterns(new String[]{RegexSupport.PROFILE_CONTAINER_PROPERTIES_REGEX});
 
         List<String> paths = getAllChildren(curator, path);
         SortedSet<File> directories = new TreeSet<File>();
@@ -107,7 +98,7 @@ public class Export extends FabricCommand {
 
         boolean founMatch = false;
         for(String p : paths) {
-            if (!matches(include, p, true) || matches(exclude, p, false) || matches(profile,p,false)) {
+            if (!matches(include, p, true) || matches(exclude, p, false)) {
                 continue;
             }
             founMatch = true;
@@ -124,14 +115,6 @@ public class Export extends FabricCommand {
                     int idx = value.indexOf("\n");
                     if (idx > 0) {
                         value = value.substring(idx + 1);
-                    }
-                }
-                //Make sure to append the parents
-                if(matches(containerProperties,p,false)) {
-                  byte[] parentData = curator.getData().forPath(p.substring(0,p.lastIndexOf("/")));
-                    if (parentData != null) {
-                        String parentValue = new String(parentData);
-                        value += "\n" + parentValue;
                     }
                 }
                 settings.put(new File(target + File.separator + name), value);
