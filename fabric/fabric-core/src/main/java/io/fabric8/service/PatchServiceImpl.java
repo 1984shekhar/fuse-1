@@ -30,9 +30,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipException;
+import java.util.zip.ZipFile;
 import java.util.zip.ZipInputStream;
 
 import io.fabric8.api.FabricService;
+import io.fabric8.api.PatchException;
 import io.fabric8.api.PatchService;
 import io.fabric8.api.Profile;
 import io.fabric8.api.Version;
@@ -62,6 +65,11 @@ public class PatchServiceImpl implements PatchService {
             // Load patch
             URI uploadUri = fabric.getMavenRepoUploadURI();
             List<PatchDescriptor> descriptors = new ArrayList<PatchDescriptor>();
+
+            if(!isZipValid(patch.getFile())){
+                throw new PatchException("Invalid zip file: " + patch.getFile());
+            }
+
             ZipInputStream zis = new ZipInputStream(new BufferedInputStream(patch.openStream()));
             try {
                 ZipEntry entry = zis.getNextEntry();
@@ -139,6 +147,8 @@ public class PatchServiceImpl implements PatchService {
                     LOGGER.info("The patch {} has already been applied to version {}, ignoring.", descriptor.getId(), version.getId());
                 }
             }
+        } catch (PatchException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Unable to apply patch", e);
         }
@@ -185,6 +195,20 @@ public class PatchServiceImpl implements PatchService {
             return bundles;
         }
     }
+
+
+        public static boolean isZipValid(String fileName) {
+            boolean result = true;
+
+            try {
+                ZipFile zipFile = new ZipFile(fileName);
+                zipFile.size();
+            } catch (Exception e){
+                result = false;
+                LOGGER.error("Patch zip [{}] is not valid. ", fileName, e);
+            }
+            return result;
+        }
 
     static void copy(InputStream is, OutputStream os) throws IOException {
         try {
